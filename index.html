@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Content Player</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F6FB; --text:#0F172A; --muted:#4B5567; --subtle:#6B7588;
+  --well:#E8EDF5; --bar:#FFFFFF; --bar-border:#DEE4EE;
+  --chip:#FFFFFF; --chip-border:#D3DAE6; --chip-text:#1E293B;
+  --primary:#0061A4; --primary-hover:#004F86; --primary-soft:rgba(0,97,164,.10);
+  --disabled-bg:#D5DBE6; --disabled-text:#7D8798;
+  --success:#14804A; --success-soft:rgba(20,128,74,.10);
+  --danger:#B42318; --danger-soft:rgba(180,35,24,.09);
+  --wave:#C9D2E1; --wave-hover:#9DAAC2;
+  --float:0 18px 40px -16px rgba(15,23,42,.35),0 2px 6px rgba(15,23,42,.06);
+  --focus:0 0 0 3px rgba(0,97,164,.35);
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C1527; --text:#F8FAFC; --muted:#B4BCCA; --subtle:#8790A0;
+    --well:#0A101D; --bar:#0C1527; --bar-border:#1E2738;
+    --chip:#151C2B; --chip-border:#2B3445; --chip-text:#E5E9F0;
+    --primary:#1F78C1; --primary-hover:#3A90D6; --primary-soft:rgba(31,120,193,.24); --focus:0 0 0 3px rgba(120,185,240,.5);
+    --disabled-bg:#3A404D; --disabled-text:#8D94A1;
+    --success:#3DD68C; --success-soft:rgba(61,214,140,.12);
+    --danger:#FF8F86; --danger-soft:rgba(255,143,134,.12);
+    --wave:#2C3341; --wave-hover:#4A5468;
+    --float:0 18px 44px -16px rgba(0,0,0,.8);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C1527; --text:#F8FAFC; --muted:#B4BCCA; --subtle:#8790A0;
+  --well:#0A101D; --bar:#0C1527; --bar-border:#1E2738;
+  --chip:#151C2B; --chip-border:#2B3445; --chip-text:#E5E9F0;
+  --primary:#1F78C1; --primary-hover:#3A90D6; --primary-soft:rgba(31,120,193,.24); --focus:0 0 0 3px rgba(120,185,240,.5);
+  --disabled-bg:#3A404D; --disabled-text:#8D94A1;
+  --success:#3DD68C; --success-soft:rgba(61,214,140,.12);
+    --danger:#FF8F86; --danger-soft:rgba(255,143,134,.12);
+  --wave:#2C3341; --wave-hover:#4A5468;
+  --float:0 18px 44px -16px rgba(0,0,0,.8);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+[hidden]{display:none!important}
+.ic{width:20px;height:20px;display:block;flex:none}
+[data-icon]{display:inline-flex}
+:focus-visible{outline:none;box-shadow:var(--focus)}
+
+.app{height:100%;display:flex;flex-direction:column}
+
+/* Top bar */
+.topbar{position:relative;flex:none;height:56px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:0 clamp(12px,2.5vw,24px);background:var(--bar);border-bottom:1px solid var(--bar-border);z-index:20}
+.tb-left{display:flex;align-items:center;gap:6px;min-width:0}
+.title{margin:0;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.info{position:relative;flex:none}
+.ghost{width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:var(--subtle);display:grid;place-items:center;cursor:pointer}
+.ghost:hover{color:var(--primary);background:var(--primary-soft)}
+.ghost .ic{width:18px;height:18px}
+.info-pop{position:absolute;top:calc(100% + 8px);left:-8px;width:min(360px,80vw);padding:12px 14px;border-radius:10px;background:var(--chip);border:1px solid var(--chip-border);box-shadow:var(--float);font-size:13px;line-height:1.55;color:var(--muted);opacity:0;transform:translateY(-4px);pointer-events:none;transition:opacity .15s,transform .15s}
+.info:hover .info-pop,.info:focus-within .info-pop,.info.open .info-pop{opacity:1;transform:none;pointer-events:auto}
+
+
+.iconbtn{width:36px;height:36px;border-radius:8px;border:1px solid var(--chip-border);background:var(--chip);color:var(--chip-text);display:inline-grid;place-items:center;cursor:pointer;flex:none}
+.iconbtn:disabled{opacity:.4;cursor:not-allowed}
+.iconbtn:hover:not(:disabled){border-color:var(--primary);color:var(--primary)}
+.iconbtn .ic{width:18px;height:18px}
+.chipbtn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--chip-border);background:var(--chip);color:var(--chip-text);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.chipbtn:hover{border-color:var(--primary)}
+.btn{border:0;border-radius:8px;background:var(--primary);color:#fff;font-weight:600;font-size:14px;height:40px;padding:0 16px;cursor:pointer;display:inline-flex;gap:8px;align-items:center;white-space:nowrap;transition:background .15s}
+.btn:hover:not(:disabled){background:var(--primary-hover)}
+.btn:disabled{background:var(--disabled-bg);color:var(--disabled-text);cursor:not-allowed}
+
+.stage{flex:1;min-height:0;position:relative}
+
+/* PDF */
+.pdf{position:absolute;inset:0;--sb:0px}
+.pdf.thumbs-open{--sb:176px}
+.thumbs{position:absolute;left:0;top:0;bottom:0;width:176px;z-index:6;overflow-y:auto;background:var(--bar);border-right:1px solid var(--bar-border);padding:16px 12px 24px;display:flex;flex-direction:column;gap:10px;transform:translateX(-100%);visibility:hidden;transition:transform .25s ease,visibility .25s}
+.pdf.thumbs-open .thumbs{transform:none;visibility:visible}
+.thumb{all:unset;box-sizing:border-box;display:block;cursor:pointer;border-radius:8px;padding:6px}
+.thumb:hover{background:var(--primary-soft)}
+.thumb:focus-visible{box-shadow:var(--focus)}
+.thumb-page{border-radius:3px;overflow:hidden;box-shadow:0 0 0 1px var(--chip-border);pointer-events:none;background:#fff}
+.thumb-page .page{box-shadow:none;border-radius:0}
+.thumb-num{display:block;text-align:center;margin-top:6px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.thumb[aria-current="true"] .thumb-page{box-shadow:0 0 0 2px var(--primary)}
+.thumb[aria-current="true"] .thumb-num{color:var(--primary);font-weight:600}
+.viewport{position:absolute;inset:0;left:var(--sb,0px);overflow:auto;background:var(--well);padding:28px clamp(12px,3vw,40px) 48px;overscroll-behavior:contain;transition:padding .3s,left .25s ease}
+.pdf.has-ack .viewport{padding-bottom:var(--ack-space,150px)}
+.pages{width:calc(min(100%,794px)*var(--z,1));margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.page{background:#fff;color:#3B4352;aspect-ratio:210/297;width:100%;border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,.08),0 14px 32px -16px rgba(0,0,0,.35);container-type:inline-size;position:relative;overflow:hidden}
+.page-inner{position:absolute;inset:0;padding:6cqw 9cqw 12cqw;display:flex;flex-direction:column}
+.doc-logo{display:flex;align-items:center;justify-content:center;gap:calc(1cqw*var(--k,1));color:#0061A4;font-size:calc(2.1cqw*var(--k,1));font-weight:500;margin-bottom:calc(4cqw*var(--k,1))}
+.doc-logo svg{width:calc(2.8cqw*var(--k,1));height:calc(2.8cqw*var(--k,1))}
+.doc{flex:1;min-height:0}
+.doc>:first-child{margin-top:0}
+.doc h1{font-size:calc(3.3cqw*var(--k,1));color:#24356E;margin:0 0 calc(2.8cqw*var(--k,1));font-weight:600;line-height:1.25}
+.doc h2{font-size:calc(2.5cqw*var(--k,1));color:#24356E;font-weight:600;margin:calc(3.2cqw*var(--k,1)) 0 calc(1.2cqw*var(--k,1))}
+.doc h1+h2,.doc>h2:first-child{margin-top:0}
+.doc table{width:100%;border-collapse:collapse;margin:calc(2cqw*var(--k,1)) 0 0;font-size:calc(1.55cqw*var(--k,1));line-height:1.5}
+.doc th{background:#EEF1F8;color:#24356E;text-align:left;font-weight:600;padding:calc(1.1cqw*var(--k,1)) calc(1.5cqw*var(--k,1));border:1px solid #D7DEEA}
+.doc td{padding:calc(1.1cqw*var(--k,1)) calc(1.5cqw*var(--k,1));border:1px solid #E1E6F0;vertical-align:top}
+.doc ul{margin:calc(1.6cqw*var(--k,1)) 0 0;padding-left:calc(3.2cqw*var(--k,1))}
+.doc li{font-size:calc(1.75cqw*var(--k,1));line-height:1.65;margin:calc(.6cqw*var(--k,1)) 0}
+.doc p+p{margin-top:calc(1.4cqw*var(--k,1))}
+.doc a{color:#0061A4;text-decoration:underline;text-underline-offset:.2em;word-break:break-word}
+.doc .toc{margin:calc(1.6cqw*var(--k,1)) 0 0}
+.doc .toc div{display:flex;align-items:baseline;gap:calc(1cqw*var(--k,1));font-size:calc(1.75cqw*var(--k,1));line-height:1.95;color:#1F2937}
+.doc .toc div i{flex:1;border-bottom:1px dotted #B7BFCC;transform:translateY(-.35em);min-width:calc(2cqw*var(--k,1))}
+.doc .toc div b{font-weight:500;font-variant-numeric:tabular-nums}
+.doc .toc div.sub{padding-left:calc(3.4cqw*var(--k,1));font-size:calc(1.55cqw*var(--k,1));line-height:1.85;color:#4B5563}
+.doc table.kv th{width:30%;background:#EEF1F8}
+.doc table.c4 td{padding:calc(.75cqw*var(--k,1)) calc(1.2cqw*var(--k,1));font-size:calc(1.45cqw*var(--k,1));line-height:1.4}
+.doc table.c4+table.c4{margin-top:0}
+.doc table.c4+table.c4 tr:first-child td{border-top:0}
+.doc ul+ul{margin-top:calc(.2cqw*var(--k,1))}
+.doc table.c4 td:nth-child(odd){width:28%;color:#1F2937;font-weight:500}
+.doc table.c4 td:nth-child(even){width:22%;font-variant-numeric:tabular-nums;color:#374151}
+.doc h3{font-size:calc(2cqw*var(--k,1));color:#2A3F86;font-weight:600;margin:calc(2.6cqw*var(--k,1)) 0 calc(.9cqw*var(--k,1))}
+.doc h4{font-size:calc(1.75cqw*var(--k,1));font-style:italic;font-weight:600;color:#1F2937;margin:calc(2.2cqw*var(--k,1)) 0 calc(.7cqw*var(--k,1))}
+.doc p{font-size:calc(1.75cqw*var(--k,1));line-height:1.7;margin:0}
+.doc-foot{position:absolute;left:9cqw;right:9cqw;bottom:4.5cqw;border-top:1px solid #E5E7EB;padding-top:1.6cqw;display:grid;grid-template-columns:1fr auto 1fr;font-size:1.2cqw;color:#6B7280}
+.doc-foot span:last-child{text-align:right}
+.cover{height:100%;display:flex;flex-direction:column;justify-content:center;gap:calc(2.2cqw*var(--k,1));border-left:calc(.7cqw*var(--k,1)) solid #0061A4;padding:0 0 calc(12cqw*var(--k,1)) calc(4.5cqw*var(--k,1))}
+.cover .kind{font-size:calc(2cqw*var(--k,1));color:#0061A4;font-weight:600;margin:0}
+.cover .ttl{font-size:calc(6cqw*var(--k,1));line-height:1.12;color:#1B2A5C;font-weight:700;margin:0;letter-spacing:-.02em}
+.cover .sub{font-size:calc(2.1cqw*var(--k,1));color:#4B5563;margin:0}
+.doc-end{margin-top:calc(4.5cqw*var(--k,1));display:flex;align-items:center;gap:calc(1.8cqw*var(--k,1));color:#6B7280;font-size:calc(1.5cqw*var(--k,1))}
+.doc-end::before,.doc-end::after{content:"";flex:1;height:1px;background:#E5E7EB}
+
+/* Acknowledgement: slides up once the document is read */
+.ack{position:absolute;left:calc(50% + var(--sb,0px)/2);bottom:24px;width:min(calc(100% - var(--sb,0px) - 24px),1120px);transform:translate(-50%,calc(100% + 40px));opacity:0;pointer-events:none;transition:transform .35s cubic-bezier(.2,.8,.2,1),opacity .25s,left .25s,width .25s;z-index:5;
+  background:var(--chip);border:1px solid var(--chip-border);border-radius:14px;box-shadow:var(--float);padding:14px 14px 14px 18px}
+.ack.show{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+.ack{display:grid}
+.ack>div{grid-area:1/1;display:flex;visibility:hidden;pointer-events:none;align-items:center;gap:16px;flex-wrap:wrap}
+.ack[data-state="ask"]>.ack-ask,.ack[data-state="done"]>.ack-done{visibility:visible;pointer-events:auto}
+.check{display:flex;gap:0;align-items:flex-start;font-size:14px;line-height:1.5;cursor:pointer;flex:1;min-width:220px}
+.check input{appearance:none;-webkit-appearance:none;width:20px;height:20px;border-radius:5px;border:1.5px solid var(--chip-border);background:var(--chip);margin:1px 12px 0 0;flex:none;cursor:pointer}
+.check input:checked{background:var(--primary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/14px no-repeat;border-color:var(--primary)}
+.ack-done{color:var(--success);font-weight:600;font-size:14px}
+.linkbtn{border:0;background:none;color:var(--primary);font-size:13.5px;font-weight:600;text-decoration:underline;text-underline-offset:.2em;cursor:pointer;padding:8px 4px;white-space:nowrap}
+.linkbtn:hover{color:var(--primary-hover)}
+.done-dialog{position:absolute;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(8,12,20,.5)}
+.dd-card{width:min(520px,100%);max-height:min(80%,560px);display:flex;flex-direction:column;align-items:stretch;background:var(--chip);color:var(--chip-text);border:1px solid var(--chip-border);border-radius:18px;box-shadow:var(--float);overflow:hidden;animation:ddin .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes ddin{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.dd-badge{width:48px;height:48px;flex:none;margin:26px auto 0;border-radius:50%;background:var(--success-soft);color:var(--success);display:grid;place-items:center}
+.dd-badge .ic{width:26px;height:26px}
+.dd-foot{display:flex;justify-content:center;padding:0 24px 22px}
+.device[data-device="mobile"] .dd-foot .btn{width:100%;justify-content:center}
+.dd-body{flex:1;min-height:0;overflow-y:auto;padding:16px 28px 18px;font-size:16px;line-height:1.6;text-align:center}
+.dd-body.long{text-align:left}
+.dd-body p{margin:0;white-space:pre-line;overflow-wrap:anywhere}
+.device[data-device="mobile"] .dd-body{padding:14px 20px 18px;font-size:15px}
+.pdfnav{display:flex;align-items:center;gap:12px}
+.pgroup,.zgroup{display:flex;align-items:center;gap:6px}
+.pgroup{gap:8px;font-size:13px;color:var(--muted)}
+.plabel{font-weight:500}
+.pfield{width:42px;height:28px;border:1px solid transparent;background:var(--well);border-radius:6px;text-align:center;font:inherit;font-size:13px;font-weight:600;color:var(--chip-text)}
+.pfield:focus{outline:none;border-color:var(--primary);background:var(--chip);box-shadow:var(--focus)}
+.ptotal{font-variant-numeric:tabular-nums;font-weight:500}
+.tsep{width:1px;height:20px;background:var(--bar-border);margin:0 4px}
+.pdfnav .iconbtn{width:28px;height:28px;border-radius:6px;border:0;background:transparent}
+.pdfnav .iconbtn:hover:not(:disabled){background:var(--well);color:var(--chip-text)}
+.pdfnav .iconbtn .ic{width:14px;height:14px}
+.zoomlabel{min-width:58px;height:28px;border:0;background:var(--well);border-radius:6px;font-size:13px;font-weight:600;color:var(--chip-text);cursor:pointer;font-variant-numeric:tabular-nums}
+.zoomlabel:hover{color:var(--primary)}
+.dock{position:fixed;right:16px;top:calc(68px + env(safe-area-inset-top,0px));z-index:60;display:flex;flex-direction:column;align-items:stretch;gap:3px;padding:8px 5px 5px;border-radius:14px;background:rgba(14,15,18,.94);border:1px solid #2B2E35;box-shadow:0 14px 34px -10px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.3);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color-scheme:dark}
+.dock-row{display:flex;align-items:center;gap:4px}
+.dock-label{font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#8A91A0;padding:0 9px;white-space:nowrap}
+.dock [role=tablist]{display:flex;gap:2px}
+.dock [role=tab]{border:0;background:transparent;color:#9BA1AD;padding:8px 9px;border-radius:9px;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:7px;cursor:pointer}
+.dock [role=tab] .ic{width:16px;height:16px}
+.dock [role=tab]:hover{color:#fff}
+.dock [role=tab][aria-selected="true"]{background:#2D3037;color:#fff;padding:8px 12px}
+.dock [role=tab]:not([aria-selected="true"]) span:last-child{display:none}
+.dock-sep{width:1px;height:22px;background:#2B2E35;margin:0 4px}
+.dock .iconbtn{width:34px;height:34px;border:0;background:transparent;color:#C7CBD4;border-radius:9px}
+.dock .iconbtn:hover:not(:disabled){background:#23262C;color:#fff}
+.dock :focus-visible{box-shadow:0 0 0 2px #fff}
+.check{position:relative}
+.tip{position:absolute;left:-6px;bottom:calc(100% + 10px);width:max-content;max-width:min(430px,calc(100vw - 48px));display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:var(--chip);background-image:linear-gradient(var(--danger-soft),var(--danger-soft));border:1px solid color-mix(in srgb,var(--danger) 26%,transparent);box-shadow:var(--float);color:var(--danger);font-size:13px;font-weight:400;line-height:1.4;opacity:0;visibility:hidden;transform:translateY(4px);transition:opacity .15s,transform .15s,visibility .15s;pointer-events:none;z-index:6}
+.tip .ic{width:15px;height:15px;flex:none}
+.tip::after{content:"";position:absolute;left:12px;bottom:-5px;width:8px;height:8px;background:inherit;border:inherit;border-top:0;border-left:0;transform:rotate(45deg)}
+.ack[data-locked="1"] .check{cursor:not-allowed}
+.ack[data-locked="1"] .check:hover .tip,.ack[data-locked="1"] .check:focus-within .tip,.ack[data-locked="1"] .check.tipshow .tip{opacity:1;visibility:visible;transform:none}
+.ack-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+.btn.outline,.btn.outline:hover:not(:disabled){background:var(--chip);color:var(--chip-text);box-shadow:inset 0 0 0 1px var(--chip-border)}
+.btn.outline:hover:not(:disabled){background:color-mix(in srgb,var(--chip-text) 9%,var(--chip));box-shadow:inset 0 0 0 1px var(--chip-border);color:var(--chip-text)}
+.btn .ic{width:17px;height:17px}
+.closed{position:fixed;inset:0;z-index:100;background:var(--bg);display:grid;place-content:center;justify-items:center;gap:16px;text-align:center;padding:24px}
+.closed h2{margin:0;font-size:20px;font-weight:700}
+.closed p{margin:0;color:var(--muted);font-size:14px}
+
+/* Media shared */
+.media-stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:86px clamp(12px,3vw,32px) 56px;container-type:size}
+.done-note{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);min-height:20px}
+.done-note .ic{width:16px;height:16px}
+.done-note.done{color:var(--success);font-weight:600}
+.done-note.nudge{animation:nudge .45s}
+@keyframes nudge{20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.scrub{position:relative;height:18px;display:flex;align-items:center;cursor:pointer;touch-action:none;border-radius:4px}
+.scrub-track{position:relative;height:4px;width:100%;border-radius:999px;background:rgba(255,255,255,.25);overflow:hidden;transition:height .15s}
+.scrub:hover .scrub-track,.scrub.drag .scrub-track{height:6px}
+.scrub-buf,.scrub-hover,.scrub-fill{position:absolute;top:0;bottom:0;left:0;width:0}
+.scrub-buf{background:rgba(255,255,255,.22)}
+.scrub-hover{background:rgba(255,255,255,.3);opacity:0}
+.scrub:hover .scrub-hover{opacity:1}
+.scrub-fill{background:#fff}
+.scrub-thumb{position:absolute;top:50%;left:0;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.35);transform:translate(-50%,-50%) scale(0);transition:transform .15s}
+.scrub:hover .scrub-thumb,.scrub.drag .scrub-thumb,.scrub:focus-visible .scrub-thumb{transform:translate(-50%,-50%) scale(1)}
+.scrub-tip{position:absolute;bottom:calc(100% + 6px);left:0;transform:translateX(-50%);background:rgba(10,12,18,.94);color:#fff;font-size:12px;font-weight:500;padding:4px 7px;border-radius:6px;opacity:0;pointer-events:none;font-variant-numeric:tabular-nums;white-space:nowrap;transition:opacity .12s}
+.scrub:hover .scrub-tip,.scrub.drag .scrub-tip,.wave:hover .scrub-tip,.wave.drag .scrub-tip{opacity:1}
+.range{-webkit-appearance:none;appearance:none;height:4px;border-radius:999px;background:linear-gradient(to right,var(--primary) var(--fill,100%),var(--track,rgba(255,255,255,.3)) var(--fill,100%));cursor:pointer;margin:0}
+.range::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--thumb,#fff);border:0}
+.range::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--thumb,#fff);border:0}
+[data-act="speed"]{min-width:58px;font-variant-numeric:tabular-nums}
+
+/* Video */
+.video-wrap{position:relative;width:min(100cqw,calc((100cqh - 34px) * 16 / 9));aspect-ratio:16/9;background:#000;border-radius:14px;overflow:hidden;cursor:pointer;box-shadow:var(--float)}
+.video-wrap:fullscreen{width:100%;height:100%;aspect-ratio:auto;border-radius:0}
+.video-wrap canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.big-play{z-index:2;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:76px;height:76px;border-radius:50%;border:0;background:rgba(0,97,164,.96);color:#fff;display:grid;place-items:center;box-shadow:0 0 0 2px rgba(255,255,255,.3),0 12px 32px rgba(0,0,0,.45);cursor:pointer;transition:opacity .2s,transform .2s}
+.big-play .ic{width:32px;height:32px}
+.playing .big-play{opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.88)}
+.flash{position:absolute;top:50%;transform:translateY(-50%);padding:10px 14px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .35s}
+.flash.show{opacity:1;transition:none}
+.vcontrols{position:absolute;left:0;right:0;bottom:0;padding:34px 14px 10px;background:linear-gradient(to top,rgba(0,0,0,.78),rgba(0,0,0,0));color:#fff;transition:opacity .25s;cursor:default}
+.video-wrap.idle .vcontrols{opacity:0;pointer-events:none}
+.video-wrap.idle{cursor:none}
+.vrow{display:flex;align-items:center;gap:4px;margin-top:6px}
+.vrow .spacer{flex:1}
+.cbtn{width:38px;height:38px;border:0;border-radius:8px;background:transparent;color:inherit;display:grid;place-items:center;cursor:pointer;flex:none}
+.cbtn:hover:not(:disabled){background:rgba(255,255,255,.14)}
+.cbtn:disabled{opacity:.35;cursor:not-allowed}
+.cbtn .ic{width:21px;height:21px}
+.speedbtn{width:auto;padding:0 10px;font-size:13px;font-weight:600}
+.time{font-size:13px;font-variant-numeric:tabular-nums;margin-left:6px;white-space:nowrap}
+.vol{display:flex;align-items:center}
+.vcontrols .range{background:linear-gradient(to right,#fff var(--fill,100%),rgba(255,255,255,.3) var(--fill,100%))}
+.vcontrols .vol .range{width:0;opacity:0;transition:width .2s,opacity .2s}
+.vcontrols .vol:hover .range,.vcontrols .vol:focus-within .range{width:84px;opacity:1;margin-right:6px}
+
+/* Audio */
+.audio-card{width:min(100%,760px);background:var(--chip);border:1px solid var(--chip-border);border-radius:16px;box-shadow:var(--float);padding:clamp(18px,3vw,28px);display:grid;grid-template-columns:auto 1fr;gap:18px 22px;align-items:center}
+.aplay{width:60px;height:60px;border-radius:50%;border:0;background:var(--primary);color:#fff;display:grid;place-items:center;cursor:pointer;box-shadow:0 12px 24px -10px rgba(0,97,164,.55);transition:background .15s}
+.aplay:hover{background:var(--primary-hover)}
+.aplay .ic{width:24px;height:24px}
+.wave{position:relative;height:56px;cursor:pointer;touch-action:none;border-radius:6px}
+.wave canvas{position:absolute;inset:0;width:100%;height:100%}
+.atimes{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:8px;font-variant-numeric:tabular-nums}
+.acontrols{grid-column:1/-1;display:flex;align-items:center;gap:8px;padding-top:16px;border-top:1px solid var(--bar-border)}
+.acontrols .spacer{flex:1}
+.acontrols .vol{gap:10px}
+.acontrols .range{width:110px;--track:var(--disabled-bg);--thumb:var(--primary)}
+
+/* ===== Document typography per device (pages are re-flowed for each) ===== */
+.device[data-device="tablet"]{--k:1.25}
+.device[data-device="mobile"]{--k:2.3}
+.device[data-device="mobile"] .page{aspect-ratio:1/2.4}
+.device[data-device="mobile"] .doc h1{font-size:6.2cqw}
+.device[data-device="mobile"] .doc .toc div{line-height:1.7}
+.device[data-device="mobile"] .doc table.c2 td{padding:1cqw 2.4cqw}
+.device[data-device="tablet"] .page-inner{padding:5.5cqw 7cqw 11cqw}
+.device[data-device="mobile"] .page-inner{padding:5.5cqw 6cqw 11cqw}
+.device[data-device="tablet"] .doc-foot{left:7cqw;right:7cqw;bottom:3.4cqw;padding-top:1.4cqw;font-size:1.5cqw}
+.device[data-device="mobile"] .doc-foot{left:6cqw;right:6cqw;bottom:3cqw;padding-top:2cqw;font-size:2.8cqw;grid-template-columns:1fr auto}
+.device[data-device="mobile"] .doc-foot span:nth-child(2){display:none}
+.device[data-device="mobile"] .doc-logo{font-size:3.8cqw;margin-bottom:5cqw}
+.device[data-device="mobile"] .cover{padding:0 0 14cqw 5cqw;border-left-width:1.2cqw;gap:3.2cqw}
+.device[data-device="mobile"] .cover .kind,.device[data-device="mobile"] .cover .sub{font-size:3.6cqw}
+.device[data-device="mobile"] .cover .ttl{font-size:8.4cqw}
+.doc table.c2 td{padding:calc(.75cqw*var(--k,1)) calc(1.2cqw*var(--k,1));font-size:calc(1.45cqw*var(--k,1));line-height:1.4}
+.doc table.c2 td:first-child{width:55%;color:#1F2937;font-weight:500}
+.doc table.c2 td:last-child{font-variant-numeric:tabular-nums;color:#374151}
+.doc table.c2+table.c2{margin-top:0}
+.doc table.c2+table.c2 tr:first-child td{border-top:0}
+
+/* ===== Device preview (Prototype settings) ===== */
+.devstage{position:fixed;inset:0;overflow:hidden;background:var(--bg)}
+.devstage[data-framed="1"]{background:color-mix(in srgb,var(--bg) 80%,#000)}
+.device{position:absolute;left:50%;top:50%;width:100%;height:100%;background:var(--bg);overflow:hidden;transform:translate(-50%,-50%) scale(var(--ds,1));transform-origin:center;--hh:56px;--sbh:0px;--safe-b:env(safe-area-inset-bottom,0px)}
+.devstage[data-framed="1"] .device{width:var(--dw);height:var(--dh);flex:none;border-radius:var(--dr);box-shadow:0 0 0 9px #14161A,0 0 0 10px #343841,0 40px 80px -24px rgba(0,0,0,.6)}
+.devstage[data-framed="1"] .device[data-device="tablet"]{--sbh:24px;--safe-b:14px}
+.devstage[data-framed="1"] .device[data-device="mobile"]{--sbh:44px;--safe-b:22px}
+.device[data-device="tablet"]{--hh:60px}
+.devstage:not([data-framed="1"]) .app{padding-top:env(safe-area-inset-top,0px)}
+.statusbar{display:none;flex:none;position:relative;height:var(--sbh,0px);align-items:center;justify-content:space-between;padding:0 28px;background:var(--bar);font-size:13px;font-weight:600;color:var(--text)}
+.devstage[data-framed="1"] .device[data-touch="1"] .statusbar{display:flex}
+.device[data-device="mobile"] .statusbar::after{content:"";position:absolute;left:50%;top:9px;width:92px;height:26px;border-radius:14px;background:#000;transform:translateX(-50%)}
+.sb-bat{display:block;width:24px;height:11px;border:1.5px solid currentColor;border-radius:4px;position:relative;opacity:.8}
+.sb-bat::after{content:"";position:absolute;inset:1.5px 5px 1.5px 1.5px;background:currentColor;border-radius:2px}
+.devstage[data-framed="1"] .device[data-touch="1"]::after{content:"";position:absolute;left:50%;bottom:7px;width:34%;height:5px;border-radius:3px;background:var(--text);opacity:.75;transform:translateX(-50%);pointer-events:none;z-index:90}
+.topbar{height:var(--hh,56px)}
+.dock .dtab{border:0;background:transparent;color:#9BA1AD;padding:8px 9px;border-radius:9px;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:7px;cursor:pointer}
+.dock .dtab .ic{width:16px;height:16px}
+.dock .dtab:hover{color:#fff}
+.dock .dtab[aria-checked="true"]{background:#2D3037;color:#fff;padding:8px 12px}
+.dock .dtab:not([aria-checked="true"]) span:last-child{display:none}
+.vframe{position:absolute;inset:0}
+.scrim{position:absolute;inset:0;background:rgba(8,12,20,.38);opacity:0;pointer-events:none;transition:opacity .25s;z-index:5}
+.zpill{display:none;position:absolute;right:12px;bottom:calc(var(--ack-space,150px) - 8px);z-index:4;flex-direction:column;border-radius:24px;background:var(--chip);border:1px solid var(--chip-border);box-shadow:var(--float);overflow:hidden}
+.zpill button{width:46px;height:46px;border:0;background:transparent;color:var(--chip-text);display:grid;place-items:center;cursor:pointer}
+.zpill button+button{border-top:1px solid var(--chip-border)}
+.zpill button:disabled{opacity:.35}
+.zpill .ic{width:20px;height:20px}
+
+/* ===== Touch devices (tablet + mobile): big targets, no hover dependence ===== */
+.device[data-touch="1"] .topbar{grid-template-columns:minmax(0,1fr) auto;padding:0 10px 0 8px;gap:8px}
+.device[data-touch="1"] .title{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.25;font-size:14.5px}
+.device[data-touch="1"] .ghost{width:44px;height:44px}
+.device[data-touch="1"] .ghost .ic{width:20px;height:20px}
+.device[data-touch="1"] .info-pop{position:fixed;left:12px;right:12px;top:calc(var(--sbh) + var(--hh) + 6px);width:auto}
+.device[data-touch="1"] .iconbtn{width:44px;height:44px}
+.device[data-touch="1"] .pdfnav .iconbtn{width:40px;height:40px}
+.device[data-touch="1"] .pdfnav .iconbtn .ic{width:18px;height:18px}
+.device[data-touch="1"] .zoomlabel{height:40px;min-width:58px;font-size:14px}
+.device[data-touch="1"] .pfield{width:52px;height:40px;font-size:15px}
+.device[data-touch="1"] .pgroup{font-size:14px}
+.device[data-touch="1"] .btn{height:48px}
+.device[data-touch="1"] .check{font-size:14px}
+.device[data-touch="1"] .check input{width:24px;height:24px;margin-top:0}
+.device[data-touch="1"] .tip{max-width:300px}
+.device[data-touch="1"] .viewport{padding:20px 14px 48px}
+.device[data-touch="1"] .pages{gap:16px}
+.device[data-touch="1"] .pdf.thumbs-open{--sb:0px}
+.device[data-touch="1"] .thumbs{width:224px;padding:18px 14px 28px;box-shadow:16px 0 36px -14px rgba(0,0,0,.4)}
+.device[data-touch="1"] .thumb{padding:8px}
+.device[data-touch="1"] .pdf.thumbs-open .scrim{opacity:1;pointer-events:auto}
+.device[data-touch="1"] .ack{bottom:calc(14px + var(--safe-b));width:calc(100% - 28px)}
+.device[data-touch="1"] .vcontrols .vol .range,.device[data-touch="1"] .acontrols .vol .range{display:none}
+.device[data-touch="1"] .cbtn{width:48px;height:48px}
+.device[data-touch="1"] .scrub{height:34px}
+.device[data-touch="1"] .scrub-track{height:6px}
+.device[data-touch="1"] .scrub-thumb{transform:translate(-50%,-50%) scale(1)}
+.device[data-touch="1"] .big-play{width:64px;height:64px}
+.device[data-touch="1"] .media-stage{padding:24px 16px 28px}
+.device[data-touch="1"] .done-note{font-size:13.5px;justify-content:center;text-align:left;padding:0 18px}
+.device[data-touch="1"] .tb-left{padding-left:8px}
+.device[data-device="mobile"] #panel-video .done-note{padding:16px 18px 0}
+
+/* ===== Tablet (768 portrait): reading-first, A4 fits the width ===== */
+.device[data-device="tablet"] .aplay{width:72px;height:72px}
+.device[data-device="tablet"] .wave{height:72px}
+.device[data-device="tablet"] .audio-card{width:min(100%,640px)}
+.device[data-device="tablet"] .acontrols .chipbtn{height:48px;min-width:64px}
+
+/* ===== Mobile (390): thumb-zone controls, bottom sheet, floating zoom ===== */
+.device[data-device="mobile"] .topbar{padding:0 12px}
+.device[data-device="mobile"] #thumbs-btn{display:none}
+.device[data-device="mobile"] .title{font-size:13.5px}
+.device[data-device="mobile"] .zgroup{display:none}
+.device[data-device="mobile"] .pgroup{gap:4px;height:36px;padding:0 14px;border-radius:18px;background:var(--well);cursor:pointer}
+.device[data-device="mobile"] .pfield{width:26px;height:30px;padding:0;background:transparent;text-align:right;pointer-events:none}
+.device[data-device="mobile"] .viewport{padding:12px 8px 48px}
+.device[data-device="mobile"] .pages{gap:10px}
+.device[data-device="mobile"] .thumbs{left:0;right:0;top:auto;bottom:0;width:auto;height:min(64%,520px);border:0;border-top:1px solid var(--bar-border);border-radius:20px 20px 0 0;padding:0 14px calc(18px + var(--safe-b));display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-content:start;transform:translateY(105%);box-shadow:0 -18px 40px -16px rgba(0,0,0,.45)}
+.device[data-device="mobile"] .pdf.thumbs-open .thumbs{transform:none}
+.device[data-device="mobile"] .thumbs::before{content:"";grid-column:1/-1;position:sticky;top:0;height:30px;margin:0 -14px 4px;z-index:2;background:linear-gradient(var(--disabled-bg),var(--disabled-bg)) center 11px/40px 5px no-repeat,var(--bar)}
+.device[data-device="mobile"] .zpill{display:flex}
+.device[data-device="mobile"] .ack{bottom:calc(10px + var(--safe-b));width:calc(100% - 20px);padding:12px}
+.device[data-device="mobile"] .check{font-size:12.5px;line-height:1.4;min-width:0}
+.device[data-device="mobile"] .ack>div{gap:10px}
+.device[data-device="mobile"] .ack .btn{width:100%;justify-content:center}
+.device[data-device="mobile"] .ack-actions{width:100%;margin-left:0}
+.device[data-device="mobile"] .vol{display:none}
+.device[data-device="mobile"] #panel-video{justify-content:flex-start;align-items:stretch;padding:0 0 28px;gap:0}
+.device[data-device="mobile"] .video-wrap{width:100%;aspect-ratio:auto;background:transparent;border-radius:0;box-shadow:none;overflow:visible;cursor:default;display:flex;flex-direction:column}
+.device[data-device="mobile"] .vframe{position:relative;aspect-ratio:16/9;background:#000;cursor:pointer}
+.device[data-device="mobile"] .video-wrap:fullscreen .vframe{flex:1;aspect-ratio:auto}
+.device[data-device="mobile"] .vcontrols{position:static;background:var(--bar);color:var(--chip-text);padding:10px 16px 16px;border-bottom:1px solid var(--bar-border)}
+.device[data-device="mobile"] .video-wrap.idle .vcontrols{opacity:1;pointer-events:auto}
+.device[data-device="mobile"] .scrub-track{background:var(--disabled-bg)}
+.device[data-device="mobile"] .scrub-buf{background:rgba(0,0,0,.1)}
+.device[data-device="mobile"] .scrub-hover{display:none}
+.device[data-device="mobile"] .scrub-fill{background:var(--primary)}
+.device[data-device="mobile"] .scrub-thumb{background:var(--primary);box-shadow:0 0 0 4px var(--primary-soft)}
+.device[data-device="mobile"] .cbtn:hover:not(:disabled){background:var(--primary-soft)}
+.device[data-device="mobile"] .vrow{justify-content:space-between;margin-top:6px}
+.device[data-device="mobile"] .vrow .spacer{display:none}
+.device[data-device="mobile"] #panel-audio{justify-content:flex-start;padding:20px 14px 28px}
+.device[data-device="mobile"] .audio-card{width:100%;grid-template-columns:1fr;gap:18px;padding:22px 16px}
+.device[data-device="mobile"] .audio-card>div:nth-child(2){order:1}
+.device[data-device="mobile"] .aplay{order:2;justify-self:center;width:76px;height:76px}
+.device[data-device="mobile"] .acontrols{order:3;justify-content:center;gap:14px;padding-top:18px}
+.device[data-device="mobile"] .acontrols .spacer{display:none}
+.device[data-device="mobile"] .acontrols .chipbtn{height:48px;min-width:64px}
+@media (max-width:720px){
+  .dock{right:12px;top:calc(64px + env(safe-area-inset-top,0px))}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="devstage" id="devstage"><div class="device" id="device" data-device="desktop" data-touch="">
+<div class="app">
+  <div class="statusbar" aria-hidden="true"><span>9:41</span><span class="sb-bat"></span></div>
+  <header class="topbar">
+    <div class="tb-left">
+      <button class="ghost" id="thumbs-btn" type="button" aria-pressed="true" aria-controls="thumbs" aria-label="Hide page thumbnails" title="Page thumbnails"><span data-icon="sidebar"></span></button>
+      <h1 class="title" id="title"></h1>
+      <div class="info" id="info">
+        <button class="ghost" id="info-btn" type="button" aria-label="Show description" aria-describedby="info-pop"><span data-icon="info"></span></button>
+        <div class="info-pop" id="info-pop" role="tooltip"></div>
+      </div>
+    </div>
+    <div class="pdfnav" id="pdfnav">
+      <div class="pgroup" id="pgroup">
+        <input class="pfield" id="page-input" type="text" inputmode="numeric" autocomplete="off" aria-label="Page number" value="1">
+        <span class="ptotal">/ <span id="page-total">7</span></span>
+      </div>
+      <div class="zgroup">
+        <span class="tsep"></span>
+        <button class="iconbtn" id="zoom-out" type="button" aria-label="Zoom out" title="Zoom out"><span data-icon="minus"></span></button>
+        <button class="zoomlabel" id="zoom-label" type="button" title="Reset zoom" aria-label="Zoom level, click to reset">100%</button>
+        <button class="iconbtn" id="zoom-in" type="button" aria-label="Zoom in" title="Zoom in"><span data-icon="plus"></span></button>
+        <span class="tsep"></span>
+        <button class="iconbtn" id="zoom-fit" type="button" aria-label="Fit to width" title="Fit to width"><span data-icon="fit"></span></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="stage">
+    <section id="panel-pdf" class="pdf" role="tabpanel" aria-labelledby="tab-pdf">
+      <nav class="thumbs" id="thumbs" aria-label="Page thumbnails"></nav>
+      <div class="scrim" id="scrim"></div>
+      <div class="viewport" tabindex="0" aria-label="Document pages"><div class="pages"></div></div>
+      <div class="zpill" id="zpill"><button id="zp-in" type="button" aria-label="Zoom in"><span data-icon="plus"></span></button><button id="zp-out" type="button" aria-label="Zoom out"><span data-icon="minus"></span></button></div>
+      <div class="ack" id="ack" role="region" aria-label="Acknowledgement">
+        <div class="ack-ask">
+          <label class="check"><input type="checkbox" id="ack-check" aria-describedby="ack-tip"><span>I confirm that I have read and understood the Global Whistleblowing Policy, including how to raise a concern and the protection from retaliation, and I agree to comply with it.</span><span class="tip" id="ack-tip" role="tooltip"><span data-icon="alert"></span><span id="ack-tip-text"></span></span></label>
+          <button class="btn" id="ack-btn" type="button" disabled>Review and Attest</button>
+        </div>
+        <div class="ack-done"><span data-icon="check"></span><span id="ack-done-text"></span>
+          <span class="ack-actions">
+            <button class="btn" id="dl-btn" type="button"><span data-icon="download"></span><span id="dl-label">Download</span></button>
+            <button class="btn outline" id="close-btn" type="button"><span data-icon="x"></span>Close player</button>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section id="panel-video" class="media-stage" role="tabpanel" aria-labelledby="tab-video" hidden>
+      <div class="video-wrap">
+        <div class="vframe">
+          <canvas width="1280" height="720" role="img" aria-label="Sample video frame"></canvas>
+          <div class="flash" aria-hidden="true"></div>
+          <button class="big-play" type="button" data-act="toggle"></button>
+        </div>
+        <div class="vcontrols">
+          <div class="scrub" data-role="scrub" role="slider" tabindex="0" aria-label="Seek" aria-valuemin="0">
+            <div class="scrub-track"><div class="scrub-buf"></div><div class="scrub-hover"></div><div class="scrub-fill"></div></div>
+            <div class="scrub-thumb"></div><div class="scrub-tip">0:00</div>
+          </div>
+          <div class="vrow">
+            <button class="cbtn" type="button" data-act="toggle"></button>
+            <button class="cbtn" type="button" data-act="back" aria-label="Back 10 seconds" title="Back 10s (J)"><span data-icon="back10"></span></button>
+            <button class="cbtn" type="button" data-act="fwd" aria-label="Forward 10 seconds" title="Forward 10s (L)"><span data-icon="fwd10"></span></button>
+            <div class="vol"><button class="cbtn" type="button" data-act="mute"></button><input class="range" type="range" min="0" max="1" step="0.01" data-role="vol" aria-label="Volume"></div>
+            <span class="time"><span data-role="cur">0:00</span> / <span data-role="dur">0:00</span></span>
+            <span class="spacer"></span>
+            <button class="cbtn speedbtn" type="button" data-act="speed" title="Change playback speed">1×</button>
+            <button class="cbtn" type="button" data-act="fs" aria-label="Full screen" title="Full screen (F)"></button>
+          </div>
+        </div>
+      </div>
+      <p class="done-note" role="status"></p>
+    </section>
+
+    <section id="panel-audio" class="media-stage" role="tabpanel" aria-labelledby="tab-audio" hidden>
+      <div class="audio-card">
+        <button class="aplay" type="button" data-act="toggle"></button>
+        <div>
+          <div class="wave" data-role="scrub" role="slider" tabindex="0" aria-label="Seek" aria-valuemin="0"><canvas></canvas><div class="scrub-tip">0:00</div></div>
+          <div class="atimes"><span data-role="cur">0:00</span><span data-role="dur">0:00</span></div>
+        </div>
+        <div class="acontrols">
+          <button class="iconbtn" type="button" data-act="back" aria-label="Back 10 seconds" title="Back 10s (J)"><span data-icon="back10"></span></button>
+          <button class="iconbtn" type="button" data-act="fwd" aria-label="Forward 10 seconds" title="Forward 10s (L)"><span data-icon="fwd10"></span></button>
+          <button class="chipbtn" type="button" data-act="speed" title="Change playback speed">1×</button>
+          <span class="spacer"></span>
+          <div class="vol"><button class="iconbtn" type="button" data-act="mute"></button><input class="range" type="range" min="0" max="1" step="0.01" data-role="vol" aria-label="Volume"></div>
+        </div>
+      </div>
+      <p class="done-note" role="status"></p>
+    </section>
+  </main>
+</div>
+<div class="done-dialog" id="done-dialog" hidden role="dialog" aria-modal="true" aria-label="Completion message">
+  <div class="dd-card" id="dd-card" tabindex="-1">
+    <span class="dd-badge"><span data-icon="check"></span></span>
+    <div class="dd-body" id="dd-body" tabindex="0"><p id="dd-msg"></p></div>
+    <div class="dd-foot"><button class="btn outline" id="dd-close" type="button">Close</button></div>
+  </div>
+</div>
+<div class="closed" id="closed" hidden role="status">
+  <h2>Player closed</h2>
+  <p>Your attestation has been recorded.</p>
+  <button class="btn outline" id="reopen-btn" type="button">Reopen player</button>
+</div>
+</div></div>
+<nav class="dock" aria-label="Prototype settings">
+  <span class="dock-label">Prototype settings</span>
+  <div class="dock-row">
+  <div role="tablist" aria-label="Content format">
+      <button role="tab" id="tab-pdf" aria-controls="panel-pdf" aria-selected="true" data-format="pdf" aria-label="PDF" title="PDF"><span data-icon="file"></span><span>PDF</span></button>
+      <button role="tab" id="tab-video" aria-controls="panel-video" aria-selected="false" tabindex="-1" data-format="video" aria-label="Video" title="Video"><span data-icon="film"></span><span>Video</span></button>
+      <button role="tab" id="tab-audio" aria-controls="panel-audio" aria-selected="false" tabindex="-1" data-format="audio" aria-label="Audio" title="Audio"><span data-icon="music"></span><span>Audio</span></button>
+    </div>
+  <span class="dock-sep"></span>
+  <button class="iconbtn" id="theme-btn" type="button"></button>
+  </div>
+  <div class="dock-row" role="radiogroup" aria-label="Device">
+    <button class="dtab" role="radio" aria-checked="true" data-device="desktop" aria-label="Desktop" title="Desktop"><span data-icon="desktop"></span><span>Desktop</span></button>
+    <button class="dtab" role="radio" aria-checked="false" data-device="tablet" aria-label="Tablet" title="Tablet"><span data-icon="tablet"></span><span>Tablet</span></button>
+    <button class="dtab" role="radio" aria-checked="false" data-device="mobile" aria-label="Mobile" title="Mobile"><span data-icon="phone"></span><span>Mobile</span></button>
+  </div>
+</nav>
+<script>
+const boot=()=>{
+'use strict';
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fmt=t=>{t=Math.max(0,Math.floor(t||0));const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;return h?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${m}:${String(s).padStart(2,'0')}`};
+const F='fill="currentColor" stroke="none"';
+const ICONS={
+  play:`<path ${F} d="M7.5 4.9v14.2c0 .8.9 1.3 1.6.8l10.6-7.1c.6-.4.6-1.2 0-1.6L9.1 4.1c-.7-.5-1.6 0-1.6.8z"/>`,
+  pause:`<rect ${F} x="6" y="4.5" width="4" height="15" rx="1.2"/><rect ${F} x="14" y="4.5" width="4" height="15" rx="1.2"/>`,
+  replay:`<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4.5h4.5"/>`,
+  back10:`<path d="M3.5 12a8.5 8.5 0 1 0 2.8-6.3"/><path d="M3.5 4v4.3h4.3"/><text x="12.3" y="15.6" text-anchor="middle" font-size="7.5" font-weight="700" ${F} font-family="Inter,Arial,sans-serif">10</text>`,
+  fwd10:`<path d="M20.5 12a8.5 8.5 0 1 1-2.8-6.3"/><path d="M20.5 4v4.3h-4.3"/><text x="11.7" y="15.6" text-anchor="middle" font-size="7.5" font-weight="700" ${F} font-family="Inter,Arial,sans-serif">10</text>`,
+  vol:`<path ${F} d="M11 5 6.5 9H3.5v6h3L11 19z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>`,
+  volLow:`<path ${F} d="M11 5 6.5 9H3.5v6h3L11 19z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/>`,
+  mute:`<path ${F} d="M11 5 6.5 9H3.5v6h3L11 19z"/><path d="m16 9.5 5 5M21 9.5l-5 5"/>`,
+  fs:`<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>`,
+  fsExit:`<path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>`,
+  pip:`<rect x="3" y="5" width="18" height="14" rx="2"/><rect ${F} x="12" y="11" width="7" height="6" rx="1"/>`,
+  sidebar:`<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>`,
+  chevL:`<path d="m15 18-6-6 6-6"/>`, chevR:`<path d="m9 18 6-6-6-6"/>`, chevD:`<path d="m6 9 6 6 6-6"/>`,
+  minus:`<path d="M5 12h14"/>`, plus:`<path d="M12 5v14M5 12h14"/>`,
+  fit:`<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/>`,
+  check:`<path d="m5 12.5 4.5 4.5L19 7.5"/>`,
+  lock:`<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>`,
+  upload:`<path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>`,
+  sun:`<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>`,
+  moon:`<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>`,
+  file:`<path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3v5h5M8.5 13h7M8.5 16.5h5"/>`,
+  film:`<rect x="3" y="5" width="18" height="14" rx="2"/><path ${F} d="M10 9.2v5.6c0 .4.4.6.7.4l4.3-2.8c.3-.2.3-.6 0-.8l-4.3-2.8c-.3-.2-.7 0-.7.4z"/>`,
+  music:`<path d="M9 18V5.5l11-2V16"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>`,
+  layers:`<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>`
+};
+const DOC='Howden Group Global Whistleblowing Policy and Reporting Procedure',FOOT='Global Whistleblowing Policy',DATE='11 March 2026';
+/* The one admin-configured field shown after the acknowledgement. Plain text; line breaks are kept. */
+const COMPLETION_MESSAGE='Thank you for acknowledging this policy.';
+ICONS.desktop=`<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>`;
+ICONS.tablet=`<rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M11 18.5h2"/>`;
+ICONS.phone=`<rect x="7.5" y="2.5" width="9" height="19" rx="2"/><path d="M11 18.5h2"/>`;
+ICONS.alert=`<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><circle ${F} cx="12" cy="16.2" r="1.1"/>`;
+ICONS.x=`<path d="M6 6l12 12M18 6 6 18"/>`;
+ICONS.download=`<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>`;
+ICONS.info=`<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle ${F} cx="12" cy="7.8" r="1.1"/>`;
+const icon=n=>`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
+const setIcon=(el,n)=>{if(el.dataset.ic!==n){el.dataset.ic=n;el.innerHTML=icon(n)}};
+$$('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));
+
+/* ---------- Theme ---------- */
+const root=document.documentElement,themeBtn=$('#theme-btn'),mq=matchMedia('(prefers-color-scheme: dark)');
+try{const s=localStorage.getItem('cp-theme');if(s==='light'||s==='dark')root.dataset.theme=s}catch(e){}
+const theme=()=>root.dataset.theme||(mq.matches?'dark':'light');
+function renderTheme(){const d=theme()==='dark';setIcon(themeBtn,d?'sun':'moon');const l=d?'Switch to light theme':'Switch to dark theme';themeBtn.setAttribute('aria-label',l);themeBtn.title=l;window.dispatchEvent(new Event('themechange'))}
+themeBtn.addEventListener('click',()=>{root.dataset.theme=theme()==='dark'?'light':'dark';try{localStorage.setItem('cp-theme',root.dataset.theme)}catch(e){}renderTheme()});
+mq.addEventListener?.('change',renderTheme);
+renderTheme();
+
+/* ---------- Description popover (hover, focus, or tap) ---------- */
+const info=$('#info');
+$('#info-btn').addEventListener('click',e=>{e.stopPropagation();info.classList.toggle('open')});
+document.addEventListener('click',e=>{if(!info.contains(e.target))info.classList.remove('open')});
+
+function nudge(el){if(!el||el.classList.contains('nudge'))return;el.classList.add('nudge');setTimeout(()=>el.classList.remove('nudge'),500)}
+/* ---------- Simulated media ---------- */
+class SimMedia extends EventTarget{
+  constructor(duration){super();this.duration=duration;this._t=0;this.paused=true;this.ended=false;this.playbackRate=1;this._v=1;this._m=false;this.buffered={length:1,start:()=>0,end:()=>duration}}
+  get currentTime(){return this._t}
+  set currentTime(v){this._t=clamp(v,0,this.duration);if(this._t<this.duration)this.ended=false;this.emit('timeupdate')}
+  get volume(){return this._v} set volume(v){this._v=v;this.emit('volumechange')}
+  get muted(){return this._m} set muted(v){this._m=v;this.emit('volumechange')}
+  emit(n){this.dispatchEvent(new Event(n))}
+  play(){if(this._t>=this.duration)this._t=0;this.paused=false;this.ended=false;this._last=performance.now();this.emit('play');cancelAnimationFrame(this._raf);this._raf=requestAnimationFrame(this._tick);return Promise.resolve()}
+  pause(){if(this.paused)return;this.paused=true;cancelAnimationFrame(this._raf);this.emit('pause')}
+  _tick=now=>{if(this.paused)return;const dt=Math.min((now-this._last)/1000,.25);this._last=now;this._t+=dt*this.playbackRate;
+    if(this._t>=this.duration){this._t=this.duration;this.paused=true;this.ended=true;this.emit('timeupdate');this.emit('pause');this.emit('ended');return}
+    this.emit('timeupdate');this._raf=requestAnimationFrame(this._tick)}
+}
+
+class Scrubber{
+  constructor(el,{getDuration,onSeek,onPreview}){
+    Object.assign(this,{el,getDuration,onSeek,onPreview,dragging:false,frac:0});
+    this.tip=$('.scrub-tip',el);
+    el.addEventListener('pointerdown',e=>{if(e.button!==0)return;this.dragging=true;el.classList.add('drag');el.setPointerCapture(e.pointerId);this.move(e,true);e.preventDefault();el.focus({preventScroll:true})});
+    el.addEventListener('pointermove',e=>this.move(e,this.dragging));
+    const end=()=>{this.dragging=false;el.classList.remove('drag')};
+    el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
+    el.addEventListener('pointerleave',()=>{if(!this.dragging)this.onPreview?.(null)});
+    el.addEventListener('keydown',e=>{const d=this.getDuration();if(!d)return;const c=this.frac*d;const map={ArrowRight:c+5,ArrowUp:c+5,ArrowLeft:c-5,ArrowDown:c-5,PageUp:c+d*.1,PageDown:c-d*.1,Home:0,End:d};
+      if(e.key in map){e.preventDefault();e.stopPropagation();this.onSeek(clamp(map[e.key],0,d))}});
+  }
+  move(e,commit){const r=this.el.getBoundingClientRect();const x=clamp((e.clientX-r.left)/r.width,0,1);const d=this.getDuration()||0;
+    if(this.tip){this.tip.textContent=fmt(x*d);const lw=this.el.offsetWidth;this.tip.style.left=clamp(x*lw,22,lw-22)+'px'}
+    this.onPreview?.(x);if(commit)this.onSeek(x*d)}
+  set(frac,t,d){this.frac=frac;this.el.setAttribute('aria-valuemax',Math.round(d));this.el.setAttribute('aria-valuenow',Math.round(t));this.el.setAttribute('aria-valuetext',`${fmt(t)} of ${fmt(d)}`)}
+}
+
+const RATES=[0.5,0.75,1,1.25,1.5,1.75,2];
+class MediaController{
+  constructor(panel,{duration,msg,render,onTime,onPreview}){
+    Object.assign(this,{panel,msg,render,onTimeCb:onTime,rate:1,vol:1,muted:false,maxT:0,done:false});
+    this.media=new SimMedia(duration);
+    const r=s=>$(`[data-role="${s}"]`,panel),a=s=>$$(`[data-act="${s}"]`,panel);
+    this.ui={cur:r('cur'),dur:r('dur'),vol:r('vol'),fill:$('.scrub-fill',panel),buf:$('.scrub-buf',panel),thumb:$('.scrub-thumb',panel),hover:$('.scrub-hover',panel)};
+    this.toggles=a('toggle');this.skipBtns={back:a('back'),fwd:a('fwd')};this.muteBtn=a('mute')[0];this.speedBtn=a('speed')[0];this.noteEl=$('.done-note',panel);
+    this.toggles.forEach(b=>b.addEventListener('click',()=>this.toggle()));
+    a('back').forEach(b=>b.addEventListener('click',()=>this.skip(-10)));
+    a('fwd').forEach(b=>b.addEventListener('click',()=>this.skip(10)));
+    this.muteBtn.addEventListener('click',()=>this.toggleMute());
+    this.ui.vol.addEventListener('input',e=>this.setVolume(+e.target.value));
+    this.speedBtn.addEventListener('click',()=>this.setRate(RATES[(RATES.indexOf(this.rate)+1)%RATES.length]));
+    this.scrub=new Scrubber(r('scrub'),{getDuration:()=>this.duration,onSeek:t=>this.seek(t),onPreview:x=>{if(this.ui.hover)this.ui.hover.style.width=(x??0)*100+'%';onPreview?.(x)}});
+    const m=this.media;
+    ['play','pause','ended'].forEach(ev=>m.addEventListener(ev,()=>this.syncPlay()));
+    m.addEventListener('timeupdate',()=>this.syncTime());
+    m.addEventListener('volumechange',()=>this.syncVol());
+    this.syncPlay();this.syncTime();this.syncVol();this.syncRate();this.syncNote();
+  }
+  get duration(){return this.media.duration}
+  toggle(){const m=this.media;(m.paused||m.ended)?m.play():m.pause()}
+  seek(t){const lim=this.done?this.duration:this.maxT;if(t>lim+.01){t=lim;nudge(this.noteEl)}this.media.currentTime=clamp(t,0,this.duration);this.syncTime()}
+  canSkip(d){const t=this.media.currentTime||0;return d>0?(this.done&&t<this.duration-.05):(this.done?t>.05:t>=-d-.01)}
+  skip(d){if(!this.canSkip(d)){nudge(this.noteEl);return}const b=this.media.currentTime;this.seek(b+d);if(Math.abs(this.media.currentTime-b)>.05)this.onSkip?.(d)}
+  syncSkip(){[['back',-10,'Back 10 seconds','Available after the first 10 seconds'],['fwd',10,'Forward 10 seconds','Available after you finish the first time']].forEach(([k,d,on,off])=>{const ok=this.canSkip(d);this.skipBtns[k].forEach(b=>{if(b.disabled===ok){b.disabled=!ok;b.title=ok?`${on} (${k==='back'?'J':'L'})`:off}})})}
+  setRate(r){this.rate=r;this.media.playbackRate=r;this.syncRate()}
+  setVolume(v){this.vol=v;this.media.volume=v;if(v>0&&this.muted){this.muted=false;this.media.muted=false}this.syncVol()}
+  toggleMute(){this.muted=!this.muted;if(!this.muted&&this.vol===0){this.vol=.6;this.media.volume=.6}this.media.muted=this.muted;this.syncVol()}
+  syncPlay(){const m=this.media,playing=!m.paused&&!m.ended;this.panel.classList.toggle('playing',playing);
+    this.toggles.forEach(b=>{const n=playing?'pause':m.ended?'replay':'play';setIcon(b,n);const l=playing?'Pause':m.ended?'Replay':'Play';b.setAttribute('aria-label',l);b.title=`${l} (K)`});
+    this.onPlay?.(playing)}
+  syncTime(){const d=this.duration,t=this.media.currentTime||0,f=d?t/d:0;
+    if(!this.done){if(t>this.maxT&&t-this.maxT<=5)this.maxT=t;if(d&&this.maxT>=d-.25){this.maxT=d;this.done=true;this.syncNote()}}
+    this.ui.cur.textContent=fmt(t);this.ui.dur.textContent=fmt(d);
+    if(this.ui.fill){this.ui.fill.style.width=f*100+'%';this.ui.thumb.style.left=f*100+'%'}
+    if(this.ui.buf)this.ui.buf.style.width=(d?this.maxT/d*100:0)+'%';
+    this.scrub.set(f,t,d);this.syncSkip();this.render?.(t);this.onTimeCb?.(f);this.onProgress?.()}
+  syncNote(){const n=this.noteEl;if(!n)return;n.classList.toggle('done',this.done);n.innerHTML=this.done?`${icon('check')}<span>Completed</span>`:`${icon('info')}<span>${this.msg}</span>`}
+  syncVol(){const v=this.muted?0:this.vol;setIcon(this.muteBtn,v===0?'mute':v<.5?'volLow':'vol');
+    const l=v===0?'Unmute':'Mute';this.muteBtn.setAttribute('aria-label',l);this.muteBtn.title=`${l} (M)`;
+    this.ui.vol.value=v;this.ui.vol.style.setProperty('--fill',v*100+'%')}
+  syncRate(){this.speedBtn.textContent=this.rate+'×';this.speedBtn.setAttribute('aria-label',`Playback speed ${this.rate}×, click to change`)}
+}
+
+/* ---------- Video ---------- */
+const vPanel=$('#panel-video'),vWrap=$('.video-wrap',vPanel),canvas=$('canvas',vPanel),ctx=canvas.getContext('2d');
+const VDUR=84,W=1280,H=720;
+function drawScene(t){
+  const p=t/VDUR,arc=Math.sin(p*Math.PI);
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,`hsl(${226-24*p},52%,${12+20*arc}%)`);g.addColorStop(1,`hsl(${22+12*p},68%,${34+20*arc}%)`);
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  const sx=W*(.14+.72*p),sy=H*(.66-.4*arc),sg=ctx.createRadialGradient(sx,sy,0,sx,sy,230);
+  sg.addColorStop(0,'rgba(255,238,196,.95)');sg.addColorStop(.13,'rgba(255,214,150,.75)');sg.addColorStop(1,'rgba(255,200,140,0)');
+  ctx.fillStyle=sg;ctx.beginPath();ctx.arc(sx,sy,230,0,Math.PI*2);ctx.fill();
+  [{y:.6,a:36,f:.004,s:.12,c:'rgba(44,62,116,.55)'},{y:.69,a:28,f:.006,s:.26,c:'rgba(28,40,84,.78)'},{y:.8,a:22,f:.009,s:.5,c:'rgba(12,20,44,.94)'}].forEach((L,i)=>{
+    ctx.fillStyle=L.c;ctx.beginPath();ctx.moveTo(0,H);
+    for(let x=0;x<=W;x+=16)ctx.lineTo(x,H*L.y+Math.sin(x*L.f+t*L.s+i*2)*L.a+Math.sin(x*L.f*2.3+i)*L.a*.4);
+    ctx.lineTo(W,H);ctx.closePath();ctx.fill()});
+  for(let i=0;i<40;i++){const s=i*97.13,x=((s*13.7+t*(8+i%5*4))%W+W)%W,y=H*.08+(s*7.3)%(H*.55)+Math.sin(t*.8+i)*10;
+    ctx.fillStyle=`rgba(255,255,255,${.07+.12*(i%5)/5})`;ctx.beginPath();ctx.arc(x,y,1+i%4,0,Math.PI*2);ctx.fill()}
+}
+const video=new MediaController(vPanel,{duration:VDUR,msg:'Watch the video to the end to mark it as complete.',render:drawScene});
+const fsBtn=$('[data-act="fs"]',vPanel),flash=$('.flash',vPanel);
+const fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement;
+function toggleFs(){try{if(fsEl())(document.exitFullscreen||document.webkitExitFullscreen).call(document);else{const r=(vWrap.requestFullscreen||vWrap.webkitRequestFullscreen).call(vWrap);r&&r.catch(()=>{})}}catch(e){}}
+function syncFs(){const on=!!fsEl();setIcon(fsBtn,on?'fsExit':'fs');const l=on?'Exit full screen':'Full screen';fsBtn.setAttribute('aria-label',l);fsBtn.title=l+' (F)'}
+fsBtn.addEventListener('click',toggleFs);document.addEventListener('fullscreenchange',syncFs);document.addEventListener('webkitfullscreenchange',syncFs);syncFs();
+const vframe=$('.vframe',vPanel);
+const onSurface=e=>e.target===canvas||e.target===vWrap||e.target===vframe;
+vWrap.addEventListener('click',e=>{if(!onSurface(e))return;if(device==='tablet'&&!video.media.paused){vWrap.classList.toggle('idle');return}video.toggle()});
+vWrap.addEventListener('dblclick',e=>{if(onSurface(e))toggleFs()});
+let idleT,flashT;
+function wake(){vWrap.classList.remove('idle');clearTimeout(idleT);if(!video.media.paused)idleT=setTimeout(()=>{if(!$('.vcontrols',vWrap).matches(':hover'))vWrap.classList.add('idle')},2600)}
+['pointermove','pointerdown','focusin','keydown'].forEach(ev=>vWrap.addEventListener(ev,wake));
+video.onPlay=p=>{p?wake():(clearTimeout(idleT),vWrap.classList.remove('idle'))};
+video.onSkip=d=>{flash.textContent=(d>0?'+':'−')+Math.abs(d)+'s';flash.style.left=d>0?'auto':'8%';flash.style.right=d>0?'8%':'auto';flash.classList.add('show');clearTimeout(flashT);flashT=setTimeout(()=>flash.classList.remove('show'),350)};
+drawScene(0);
+
+/* ---------- Audio ---------- */
+const aPanel=$('#panel-audio'),wave=$('.wave',aPanel),wc=$('canvas',wave),wctx=wc.getContext('2d');
+let hoverX=null,lastF=0;
+const AMPS=(()=>{let s=11;const rnd=()=>(s=s*16807%2147483647)/2147483647;const raw=[];for(let i=0;i<480;i++)raw.push(.18+.5*Math.abs(Math.sin(i*.045))*(.6+.4*Math.sin(i*.013))+rnd()*.32);
+  return raw.map((v,i)=>((raw[i-1]??v)+v*2+(raw[i+1]??v))/4).map(v=>clamp(v,.08,1))})();
+function drawWave(f=lastF){lastF=f;const dpr=window.devicePixelRatio||1,w=wave.clientWidth,h=wave.clientHeight;if(!w)return;
+  if(wc.width!==Math.round(w*dpr)||wc.height!==Math.round(h*dpr)){wc.width=Math.round(w*dpr);wc.height=Math.round(h*dpr)}
+  wctx.setTransform(dpr,0,0,dpr,0,0);wctx.clearRect(0,0,w,h);
+  const cs=getComputedStyle(aPanel),pc=cs.getPropertyValue('--primary').trim(),bc=cs.getPropertyValue('--wave').trim(),hc=cs.getPropertyValue('--wave-hover').trim();
+  const step=5,n=Math.floor(w/step);
+  for(let b=0;b<n;b++){const x=b/n,bh=Math.max(3,AMPS[Math.floor(x*AMPS.length)]*h);
+    wctx.fillStyle=x<f?pc:(hoverX!=null&&x<hoverX?hc:bc);
+    const px=b*step,py=(h-bh)/2;if(wctx.roundRect){wctx.beginPath();wctx.roundRect(px,py,3,bh,1.5);wctx.fill()}else wctx.fillRect(px,py,3,bh)}}
+const audio=new MediaController(aPanel,{duration:96,msg:'Listen to the audio to the end to mark it as complete.',onTime:f=>drawWave(f),onPreview:x=>{hoverX=x;drawWave()}});
+new ResizeObserver(()=>drawWave()).observe(wave);
+window.addEventListener('themechange',()=>drawWave());
+/* ---------- PDF: scroll-driven reading ---------- */
+let device='desktop';
+const pdf=$('#panel-pdf'),pagesEl=$('.pages',pdf),vp=$('.viewport',pdf),pageInput=$('#page-input');
+const ack=$('#ack'),chk=$('#ack-check'),ackBtn=$('#ack-btn');
+const logo=`<div class="doc-logo">Howden Group</div>`;
+const hH=(n,t,k)=>`<h${n}${k?` data-k="${k}"`:''}>${t}</h${n}>`,hP=t=>`<p>${t}</p>`,hUL=(...a)=>{const o=[];const step=layoutDev==='mobile'?2:5;for(let i=0;i<a.length;i+=step)o.push(`<ul>${a.slice(i,i+step).map(x=>`<li>${x}</li>`).join('')}</ul>`);return o};
+const esc=t=>String(t).replace(/&/g,'&amp;');
+const hKV=rows=>`<table class="kv"><tbody>${rows.map(r=>`<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join('')}</tbody></table>`;
+const hGRID=(head,rows)=>`<table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c||'&nbsp;'}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+const hC4=rows=>{const o=[];
+  if(layoutDev==='mobile'){for(let i=0;i<rows.length;i+=8)o.push(`<table class="c2"><tbody>${rows.slice(i,i+8).map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</tbody></table>`);return o}
+  const half=Math.ceil(rows.length/2),trs=[];for(let i=0;i<half;i++){const a=rows[i],c=rows[i+half];trs.push(`<tr><td>${esc(a[0])}</td><td>${esc(a[1])}</td>${c?`<td>${esc(c[0])}</td><td>${esc(c[1])}</td>`:'<td></td><td></td>'}</tr>`)}
+  for(let i=0;i<trs.length;i+=7)o.push(`<table class="c4"><tbody>${trs.slice(i,i+7).join('')}</tbody></table>`);return o};
+const TOC_ROWS=[['01 Purpose','purpose'],['02 Application','application'],['03 Policy Statement','statement'],['04 Principles','principles'],['05 Procedure','procedure'],['06 Confidentiality','confidentiality'],['07 Communication of Outcomes','outcomes'],['08 Retention of Records','retention'],['Appendix 1: Reporting Services','appendix'],['Europe','europe',1],['Asia Pacific','apac',1],['North &amp; South America','americas',1],['Middle East &amp; Africa','mea',1],['Version Control','version']];
+const hTOC=m=>`<div class="toc">${TOC_ROWS.map(([t,k,sub])=>`<div${sub?' class="sub"':''}><span>${t}</span><i></i><b>${m[k]||'–'}</b></div>`).join('')}</div>`;
+const COVER=`<div class="cover"><p class="kind">Internal document</p><p class="ttl">Howden Group Global Whistleblowing Policy and Reporting Procedure</p><p class="sub">Version v1.1 · 11 March 2026</p></div>`;
+const buildBody=m=>[
+hH(1,DOC),
+hH(2,'Contents'),
+hTOC(m),
+hH(2,"01 Purpose","purpose"),
+hP("As a ‘People-first’ organisation, Howden Group takes any form of wrongdoing very seriously. The wellbeing and integrity of our employees and business is of paramount importance to us and for that reason, we encourage all employees, independent contractors, third party vendors, customers and business partners to raise any concerns that they may have about the conduct of others in the business or the way in which the business is run."),
+hP("The Global Whistleblowing Policy sets out expectations from colleagues as well as the way in which concerns can be raised."),
+hP("The Policy covers legitimate concerns about disclosures of information that can be broadly categorised as concerns regarding:"),
+hUL("A criminal offence.","Miscarriage of justice.","An act creating risk to health and safety.","An act causing damage to the environment.","Negligence causing or likely to cause harm to the business, the environment or a person.","Serious or repeated breaches of our internal policies and procedures.","Breaches of competition law or anti-competitive practices.","A breach of any other legal obligation.","Conduct likely to damage Howden Group Holdings and/or any associated subsidiary company’s reputation.","Fraud or deliberate error in the preparation, evaluation, review or audit of any financial statement of Howden.","Significant deficiencies in or intentional non-compliance with the Howden’s internal accounting controls.","Misrepresentations or false statements regarding a matter contained in the financial records, financial reports or audit reports of Howden.","Deviation from the full and fair reporting of Howden’s financial condition."),
+hH(2,"02 Application","application"),
+hP("This Policy applies to:"),
+hUL("All employees, partners, officers, and directors of the Howden Group.","Contractors, contingent workers and representatives acting on behalf of the Howden Group.","External third parties or counterparties e.g. customers, suppliers and business partners."),
+hH(2,"03 Policy Statement","statement"),
+hP("Howden Group encourages prompt and responsible reporting of any concerns relating to qualifying disclosures. The concerns will be independently assessed and investigated if they fall within this Policy. The Group strictly prohibits retaliation or detriment against any person who raises a concern under this Policy in good faith."),
+hH(2,"04 Principles","principles"),
+hP("The Policy demonstrates our commitment to creating and maintaining a culture of openness within the organisation."),
+hUL("Individuals should be aware of the importance of preventing and eliminating wrongdoing at work. Including, being watchful for illegal or unethical conduct and report anything of that nature that they become aware of, at the first opportunity.","Any matter falling under this Policy will be investigated thoroughly, promptly and confidentially, and the outcome of the investigation reported back to the individual who raised the issue wherever possible.","If requested, Howden Group will protect the confidentiality and anonymity to the fullest extent possible, consistent with the need to conduct an adequate review.","No individual will be victimised for raising a matter under this Policy. This means that the continued employment and opportunities for future promotion or training of the individual will not be prejudiced because he/she has raised a legitimate concern.","Victimisation of a worker for making a disclosure under this Policy will be a disciplinary offence.","If misconduct is discovered as a result of any investigation under this Policy the organisation's disciplinary procedure will be used, in addition to any appropriate external measures.","Maliciously making a false allegation is a disciplinary offence.","An instruction to cover up wrongdoing is itself a disciplinary offence. If told not to raise or pursue any concern, even by a person in authority such as a manager, individuals should not agree to remain silent."),
+hP("The Policy is not applicable for disclosures about matters concerning a breach of an employee's own contract of employment. If an employee is concerned about their own contract, they should use the organisation's grievance procedure."),
+hH(2,"05 Procedure","procedure"),
+hH(3,"Step One",""),
+hP("In the first instance, any concerns should be raised with your Line Manager. If you believe your Line Manager to be involved, or for any reason do not wish to approach your Line Manager, then you should raise the matter with a senior member of the Human Resources (HR) team and/or your Compliance team."),
+hH(3,"Step Two",""),
+hP("Your Line Manager/appropriate senior member will arrange an investigation into the matter (either by investigating the matter him/herself or immediately passing the issue to someone in a more senior position). The investigation may involve you and other individuals involved being interviewed and/or giving a written statement. Any investigation will be carried out in accordance with the Principles referred to above. Your interview notes and/or written statement referred to above will be taken into account and you may be asked to comment on any additional evidence obtained."),
+hP("Whistleblowing concerns relating to accounting/financial matters, will be reviewed under the Group Audit Committee direction with oversight by the Group Chief Risk Officer (CRO), or such other persons as the Audit Committee determines to be appropriate."),
+hP("The Howden Group will abide by all laws that prohibit retaliation against any employees who lawfully submit a whistleblowing concern under these procedures."),
+hH(3,"Step Three",""),
+hP("Where the matter is considered more serious, an alternative, independent and confidential route for raising concerns has been established:"),
+hUL("Any person may submit (<em>anonymously or otherwise</em>) a written whistleblowing concern via email to the <a href=\"mailto:rebecca.scott@howdengroup.com\" target=\"_blank\" rel=\"noopener noreferrer\">Group CRO</a> or by post to the following address: Howden Group Holdings Limited, One Creechurch Place, London, UK EC3A 5AF.","Any person may submit (<em>anonymously or otherwise</em>) a written whistleblowing concern via email to the Group Whistleblowing Champion, who is also the Chair of the Group Audit Committee – <a href=\"mailto:Mark.Stephen@howdengrp.com\" target=\"_blank\" rel=\"noopener noreferrer\">Mark Stephen</a>. Your division may, where appropriate, designate a local Whistleblowing Champion in addition to the Group.","Safecall, the Group’s Whistleblowing service provider, provides an independent confidential reporting line where you can raise your concerns and be assured that they will be fully addressed. Calls are handled by skilled staff and will be treated in complete confidence. A report of the call will be sent to Group CRO. Safecall will not disclose your name to Howden Group if you wish to remain anonymous."),
+hP("The Safecall line is available 24/7 365 days a year. Alternatively, Safecall can be contacted via e-mail hyperion@safecall.co.uk or via the web: <a href=\"https://www.safecall.co.uk/file-a-report/\" target=\"_blank\" rel=\"noopener noreferrer\">https://www.safecall.co.uk/file-a-report/</a>."),
+hP("Details of local Safecall service has been included in Appendix 1: Reporting Services."),
+hH(3,"Step Four",""),
+hP("If on conclusion of all of the above steps, you reasonably believe that the appropriate action has not been taken, you may report the matter to the proper authority."),
+hP("The legislation sets out a number of bodies to which qualifying disclosures may be made. These include (but are not limited to):"),
+hUL("<a href=\"https://www.gov.uk/government/organisations/hm-revenue-customs\" target=\"_blank\" rel=\"noopener noreferrer\">HM Revenue &amp; Customs;</a>","<a href=\"https://www.fca.org.uk/contact\" target=\"_blank\" rel=\"noopener noreferrer\">Financial Conduct Authority</a>;","<a href=\"https://www.gov.uk/guidance/tell-the-cma-about-a-competition-or-market-problem\" target=\"_blank\" rel=\"noopener noreferrer\">Competition and Markets Authority</a>;","<a href=\"https://www.hse.gov.uk/contact/tell-us-about-a-health-and-safety-issue.htm\" target=\"_blank\" rel=\"noopener noreferrer\">Health and Safety Executive</a>;","<a href=\"https://www.gov.uk/guidance/whistleblowing-report-serious-wrongdoing-to-the-environment-agency\" target=\"_blank\" rel=\"noopener noreferrer\">Environment Agency</a>;","<a href=\"https://www.gov.uk/government/organisations/independent-police-complaint-commission\" target=\"_blank\" rel=\"noopener noreferrer\">Independent Office for Police Conduct</a> (formerly known as Independent Police Complaints Commission);","<a href=\"https://sforeporting.egressforms.com/\" target=\"_blank\" rel=\"noopener noreferrer\">Serious Fraud Office</a>."),
+hH(2,"06 Confidentiality","confidentiality"),
+hP("Referrals made to the HR team are recorded anonymously and filed in restricted access folders viewable by senior HR representatives only. All records remain strictly confidential unless specific consent has been obtained. The individual reporting the case must keep details of any investigation confidential whilst the investigation is ongoing."),
+hP("Referrals made to the Safecall service are also only documented anonymously, via the independent hotline managed by appropriately qualified call handlers. Calls are not recorded – only handwritten notes are used to generate a comprehensive written report to the Group CRO."),
+hP("Limitations on confidentiality relate to instances whereby the Group is compelled to make disclosures under specific laws and regulations e.g. court orders, health and safety, or criminal risk."),
+hH(2,"07 Communication of Outcomes","outcomes"),
+hP("During the course of the investigation, we will endeavour to report progress and outcomes where possible and appropriate (subject to the limitations noted above). Given the case by case nature of the investigation process, where possible, we will aim to commence an investigation within seven (7) days of receipt of a notification, with regular updates thereafter."),
+hP("There may be instances where it is not possible for the Group and/or Safecall to share the outcome of an investigation with the informant/the ‘Whistleblower’. These cases typically relate to serious legal or regulatory investigations in which we are obligated to retain confidentiality."),
+hP("The Group CRO will quarterly and/or more frequently, as required, submit a written report to relevant Group Committee e.g. Group Audit Committee, that summarises each whistleblowing concern received by the Group within the last 12 months. The report will contain details such as:"),
+hUL("the whistleblower (unless anonymous, in which case the report will so indicate),","a description of the substance of the concern;","the status of the investigation;","any conclusions reached by the investigator; and","findings and recommendations."),
+hP("At any time with regard to any whistleblowing concern received, the Group CRO reserves the right to specify a different procedure for investigations and/or treatment."),
+hP("All reports and records associated with a whistleblowing concern relating to accounting/financial matters are considered confidential information and access will be restricted to the Group CRO or any person assigned to investigate the concern on his/her behalf, members of the relevant Group Board Committee e.g. Audit Committee, the legal department, employees of the Group or outside counsel involved in investigating the concern. Access to reports and records may be granted to other parties at the discretion of the relevant Group Board Committee e.g. Audit Committee."),
+hP("Whistleblowing concerns relating to accounting/financial matters and any resulting investigations, reports or resulting actions will generally not be disclosed to the public except as required by any legal requirements or regulations or by any corporate policy in place at the time."),
+hH(2,"08 Retention of Records","retention"),
+hP("All whistleblowing concerns and associated documents made through the procedures outlined above shall be retained for at least five years from the date of the concern, after which the information may be destroyed unless the information may be relevant to any pending or potential litigation, inquiry or investigation, in which case the information may not be destroyed and must be retained for the duration of that litigation, inquiry or investigation and thereafter as necessary."),
+hH(2,"Appendix 1: Reporting Services","appendix"),
+hP("Safecall is a completely independent company that operates a confidential reporting hotline for global businesses. The service is available to all staff 24 hours a day, 365 days a year is a completely anonymous and confidential service. Safecall’s call handlers are former police officers who have a minimum of 25 years’ investigative experience, supported by interpreters who are available in 170 different languages."),
+hP("There are two main ways to contact Safecall:"),
+hUL("Freephone telephone – See below list of International Phone Numbers","Safecall’s website – <a href=\"http://www.safecall.co.uk/report\" target=\"_blank\" rel=\"noopener noreferrer\">www.safecall.co.uk/report</a>"),
+hP("Individuals raising any concern can remain anonymous. Safecall do not audio record any of the calls to help protect the identity of anonymous callers."),
+hH(3,"Europe","europe"),
+hC4([["Austria", "00 800 72332255"], ["Belgium", "00 800 72332255"], ["Bulgaria", "00 800 72332255"], ["Croatia", "0 800 222 847"], ["Cyprus", "00 800 7233 2255"], ["Czech Republic", "00 800 72332255"], ["Denmark", "80 25 41 90"], ["Estonia", "8000 044 514"], ["Finland", "990 800 7233 2255 (Telia Sonera)"], ["Finland", "999 800 7233 2255 (Elisa)"], ["France", "00 800 72332255"], ["Germany", "00 800 72332255"], ["Greece", "00 800 4414 1966"], ["Hungary", "0680993052"], ["Iceland", "00 800 7233 2255"], ["Ireland", "1 800 812 740"], ["Israel", "012 800 7233 2255 (Golden Lines)"], ["Israel", "013 800 7233 2255 (Barak)"], ["Israel", "014 800 7233 2255 (Bezeq)"], ["Italy", "00 800 7233 2255"], ["Kazakhstan", "8800 3333 499"], ["Latvia", "00 800 7233 2255"], ["Lithuania", "00 800 7233 2255"], ["Luxembourg", "800 28502"], ["Malta", "800 62130"], ["Monaco", "800 94421"], ["Netherlands", "00 800 7233 2255"], ["North Macedonia", "0800 80497"], ["Norway", "00 800 7233 2255"], ["Poland", "00 800 7233 2255"], ["Portugal", "00 800 7233 2255"], ["Romania", "0372 741 942"], ["Russia", "810 800 7233 2255"], ["Serbia", "0800 190 609"], ["Slovakia", "0800 004 996"], ["Slovenia", "0800 81096"], ["Spain", "00 800 7233 2255"], ["Sweden", "0850 252 122"], ["Switzerland", "00 800 7233 2255"], ["Turkey", "00 800 4488 20729"], ["United Kingdom", "0800 915 1571"], ["Ukraine", "0800 502 436"]]),
+hH(3,"Asia Pacific","apac"),
+hC4([["Australia", "1 800 312 928"], ["Bangladesh", "+44 191 516 7756"], ["Brunei", "+44 191 5167753"], ["Cambodia", "1 800 209 761"], ["China (local call rates apply)", "4008 833 405"], ["Hong Kong", "3077 5524"], ["Indonesia", "001 803 440 884"], ["Indonesia", "007 803 440 884 (PT Telekom)"], ["India", "000 800 4401 256"], ["Japan", "0120 921 067"], ["Republic of Korea", "001 800 7233 2255 (Korea Telecom)"], ["Republic of Korea", "002 800 7233 2255 (DACOM)"], ["Laos", "+44 191 5167754"], ["Macau", "00 800 7233 2255"], ["Malaysia", "1800 220 054"], ["Myanmar", "+44 191 5167761"], ["Mongolia", "+44 191 5167766"], ["Nepal", "+44 191 5167775"], ["New Zealand", "00 800 7233 2255"], ["Pakistan", "00 800 900 44036"], ["Philippines", "2 8 540 2694"], ["Singapore", "800 448 1773"], ["Sri Lanka", "242 3109"], ["Taiwan", "00801 444460"], ["Thailand", "001 800 7233 2255"], ["Vietnam (Mobifone)", "121 020036"], ["Vietnam (Viettel)", "122 80725"], ["Vietnam (VNPT)", "120 11157"]]),
+hH(3,"North &amp; South America","americas"),
+hC4([["Argentina", "0800 666 2016"], ["Antigua & Barbuda", "011 800 7233 2255"], ["Bahamas", "1 877 890 3711"], ["Barbados", "1 800 987 1758"], ["Bermuda", "011 800 7233 2255"], ["Brazil", "0800 892 1750"], ["Bolivia", "800 110 328"], ["Canada", "1 877 599 8073"], ["Cayman Islands", "1 800 987 1759"], ["Chile", "800 200 734"], ["Colombia", "01 800 944 8040"], ["Costa Rica", "+506 4001 6773"], ["Cuba", "+44 191 5167769"], ["Dominican Republic", "1800 148 5014"], ["El Salvador", "+44 191 5167769"], ["Ecuador", "1 800 000 375"], ["French Antilles", "+44 191 5167751"], ["French Guiana", "+44 191 5167751"], ["Grenada", "1 855 832 5171"], ["Guatemala", "+44 191 5167769"], ["Guyana", "+44 191 5167769"], ["Haiti", "+44 191 5167751"], ["Honduras", "0 800 2791 9200"], ["Jamaica", "1 800 987 1749"], ["Mexico", "800 1231758"], ["Nicaragua", "001 800 220 2355"], ["Panama", "00 800 044 9854"], ["Paraguay", "009 800 441 0159"], ["Peru", "0800 77601"], ["St. Lucia", "1800 987 1843"], ["Trinidad & Tobago", "1888 388 1596"], ["Uruguay", "0004 044 037"], ["USA", "1 866 901 3295"], ["Venezuela", "0 800 100 8696"]]),
+hH(3,"Middle East &amp; Africa","mea"),
+hC4([["Algeria", "+44 191 5167764"], ["Angola", "+44 191 5167764"], ["Bahrain", "8000 4264"], ["Botswana", "+44 191 5167764"], ["Burkina Faso", "+44 191 5167764"], ["Cameroon", "+44 191 5167764"], ["Congo", "+44 191 5167764"], ["Côte d’Ivoire – Mali", "+44 191 5167764"], ["Ethiopia", "+44 191 5167764"], ["Egypt", "0800 000 0059"], ["Gabon", "+44 191 5167764"], ["Ghana", "+233 0 24 242 6028"], ["Kenya", "0800 230 001"], ["Kuwait", "+44 191 5167756"], ["Lebanon", "+44 191 5167756"], ["Mali", "+44 191 5167764"], ["Mauritius", "802 044 0038"], ["Morocco", "8000 96071"], ["Namibia", "+44 191 5167764"], ["Nigeria", "+44 191 5167764"], ["Oman", "800 72323"], ["Qatar", "8000 250"], ["Saudi Arabia", "800 844 2067"], ["Senegal", "+44 191 5167764"], ["South Africa", "0 800 990 243"], ["Swaziland", "+44 191 5167764"], ["Syria", "+44 191 5167756"], ["Togo", "+44 191 5167764"], ["Tunisia", "+216 0 31 365 903"], ["UAE", "8000 441 3376"]]),
+hH(2,'Version Control','version'),
+hH(3,'Current Version:'),
+hKV([['Version','v1.1'],['Policy Owner:','Rebecca Scott – Group Chief Risk Officer'],['Approved by:','Group Risk Committee'],['Date:','11 March 2026'],['Next Review:','Q1 2027']]),
+hH(3,'Version History'),
+hGRID(['Version','Author','Date','Comments'],[['','','',''],['','','','']]),
+hP('This is an internal document intended for use by Howden and should not be relied upon, cited or used by any third party without express permission.'),
+'<div class="doc-end">End of document</div>'
+].flat();
+const REFW={desktop:794,tablet:736,mobile:358};
+function paginate(blocks,dev){
+  const units=[];let cur=[];
+  blocks.forEach(b=>{cur.push(b);if(!/^<h[1-4]/.test(b)||/^<h1/.test(b)){units.push(cur);cur=[]}});if(cur.length)units.push(cur);
+  const host=document.createElement('div');host.setAttribute('aria-hidden','true');host.className='device';host.dataset.device=dev;host.dataset.touch=dev==='desktop'?'':'1';const W=REFW[dev];host.style.cssText=`position:fixed;left:-10000px;top:0;width:${W}px;height:4000px;transform:none;overflow:visible;visibility:hidden;pointer-events:none`;
+  host.innerHTML=`<article class="page" style="width:${W}px"><div class="page-inner">${logo}<div class="doc"></div></div></article>`;document.body.append(host);
+  const doc=host.querySelector('.doc'),pages=[];let acc=[];
+  for(const u of units){const h=u.join('');acc.push(h);doc.innerHTML=acc.join('');
+    if(doc.scrollHeight>doc.clientHeight+1&&acc.length>1){acc.pop();pages.push(acc.join(''));acc=[h]}}
+  if(acc.length)pages.push(acc.join(''));
+  host.remove();return pages}
+function buildPages(dev){layoutDev=dev;let m={},pages;
+  for(let i=0;i<4;i++){pages=paginate(buildBody(m),dev);const nm={};
+    pages.forEach((h,idx)=>{for(const x of h.matchAll(/data-k="([^"]+)"/g))if(!(x[1] in nm))nm[x[1]]=idx+2});
+    if(JSON.stringify(nm)===JSON.stringify(m))break;m=nm}
+  return pages}
+let layoutDev='desktop';
+let PAGES=[COVER,...buildPages('desktop')];
+let N=PAGES.length;
+const thumbsEl=$('#thumbs');
+
+
+const viewed=new Set(),vis=new Map(),timers=new Map();let current=1,attested=false;
+const isSeen=v=>v&&(v.ratio>=.3||v.h>=vp.clientHeight*.3);
+const io=new IntersectionObserver(entries=>{
+  entries.forEach(en=>vis.set(+en.target.dataset.page,{ratio:en.intersectionRatio,h:en.intersectionRect.height}));
+  let best=current,bh=-1,changed=false;
+  vis.forEach((v,n)=>{if(v.h>bh){bh=v.h;best=n}
+    if(isSeen(v)&&!viewed.has(n)){viewed.add(n);changed=true}});
+  const atEnd=vp.scrollTop+vp.clientHeight>=vp.scrollHeight-4;
+  if(atEnd)best=N;
+  if(bh>0&&best!==current){current=best;changed=true}
+  if(changed)updatePdf();
+},{root:vp,threshold:Array.from({length:21},(_,i)=>i/20)});
+function renderPages(){
+  pagesEl.innerHTML='';thumbsEl.innerHTML='';
+PAGES.forEach((html,i)=>{
+  const inner=`<div class="page-inner">${logo}<div class="doc">${html}</div><div class="doc-foot"><span>${FOOT}</span><span>${DATE}</span><span>${i+1}</span></div></div>`;
+  const pg=document.createElement('article');pg.className='page';pg.dataset.page=i+1;pg.setAttribute('aria-label',`Page ${i+1} of ${N}`);pg.innerHTML=inner;pagesEl.append(pg);
+  const th=document.createElement('button');th.type='button';th.className='thumb';th.dataset.page=i+1;th.setAttribute('aria-label',`Go to page ${i+1}`);
+  th.innerHTML=`<div class="thumb-page" aria-hidden="true"><div class="page">${inner}</div></div><span class="thumb-num">${i+1}</span>`;thumbsEl.append(th)});
+  io.disconnect();vis.clear();viewed.clear();current=1;
+  $$('.page',pagesEl).forEach(p=>io.observe(p));
+  $('#page-total').textContent=N;vp.scrollTop=0;thumbsEl.scrollTop=0}
+renderPages();
+vp.addEventListener('scroll',()=>{if(vp.scrollTop+vp.clientHeight>=vp.scrollHeight-4&&current!==N){current=N;updatePdf()}},{passive:true});
+
+function setAckSpace(){const b=parseFloat(getComputedStyle(ack).bottom)||24;pdf.style.setProperty('--ack-space',(ack.offsetHeight+b+24)+'px')}
+let tipT;
+const tipText=()=>'Please read through the whole policy first.';
+function peekTip(){const c=$('.check',ack);c.classList.add('tipshow');clearTimeout(tipT);tipT=setTimeout(()=>c.classList.remove('tipshow'),3200)}
+function updatePdf(){
+  if(document.activeElement!==pageInput)pageInput.value=current;
+  $('#pgroup').title=`Page ${current} of ${N}`;
+  $$('.thumb',thumbsEl).forEach(t=>t.setAttribute('aria-current',String(+t.dataset.page===current)));
+  const ct=$('.thumb[aria-current="true"]',thumbsEl);if(ct&&pdf.classList.contains('thumbs-open')){const top=ct.offsetTop,bot=top+ct.offsetHeight;if(top<thumbsEl.scrollTop)thumbsEl.scrollTop=Math.max(0,top-12);else if(bot>thumbsEl.scrollTop+thumbsEl.clientHeight)thumbsEl.scrollTop=bot-thumbsEl.clientHeight+12}
+  ack.dataset.state=attested?'done':'ask';
+  ack.dataset.locked=viewed.size<N?'1':'';
+  $('#ack-tip-text').textContent=tipText();
+  ack.classList.add('show');pdf.classList.add('has-ack');
+  requestAnimationFrame(setAckSpace);
+  ackBtn.disabled=!chk.checked||viewed.size<N;
+}
+chk.addEventListener('click',e=>{if(viewed.size<N){e.preventDefault();peekTip()}});
+chk.addEventListener('change',()=>ackBtn.disabled=!chk.checked||viewed.size<N);
+window.addEventListener('resize',setAckSpace);
+
+/* ---------- Zoom ---------- */
+const Z=[.5,.75,1,1.25,1.5,2,3];let zi=2;
+const zLabel=$('#zoom-label'),zOut=$('#zoom-out'),zIn=$('#zoom-in'),zFit=$('#zoom-fit');
+function setZoom(i){zi=clamp(i,0,Z.length-1);const r=vp.scrollTop/Math.max(1,vp.scrollHeight);
+  pagesEl.style.setProperty('--z',Z[zi]);vp.scrollTop=r*vp.scrollHeight;
+  zLabel.textContent=Math.round(Z[zi]*100)+'%';zOut.disabled=zi===0;zIn.disabled=zi===Z.length-1;zFit.disabled=zi===2;$('#zp-in').disabled=zi===Z.length-1;$('#zp-out').disabled=zi===0}
+zOut.addEventListener('click',()=>setZoom(zi-1));zIn.addEventListener('click',()=>setZoom(zi+1));zLabel.addEventListener('click',()=>setZoom(2));zFit.addEventListener('click',()=>setZoom(2));
+setZoom(2);
+
+/* ---------- Jump to a page (type a number, press Enter) ---------- */
+$('#page-total').textContent=N;
+function goTo(n){n=clamp(Math.round(+n)||current,1,N);const el=pagesEl.children[n-1];vp.scrollTo({top:el.offsetTop-24,behavior:'auto'});current=n;updatePdf()}
+pageInput.addEventListener('focus',()=>pageInput.select());
+pageInput.addEventListener('input',()=>{pageInput.value=pageInput.value.replace(/\D/g,'')});
+pageInput.addEventListener('keydown',e=>{if(e.key==='Enter'){goTo(pageInput.value);pageInput.blur()}else if(e.key==='Escape'){pageInput.blur()}});
+pageInput.addEventListener('blur',()=>{pageInput.value=current});
+
+/* ---------- Thumbnail sidebar (collapsible) ---------- */
+const thumbsBtn=$('#thumbs-btn');
+function revealThumb(){const ct=$('.thumb[aria-current="true"]',thumbsEl);if(ct)thumbsEl.scrollTop=Math.max(0,ct.offsetTop-(thumbsEl.clientHeight-ct.offsetHeight)/2)}
+function setThumbs(on){pdf.classList.toggle('thumbs-open',on);if(on)requestAnimationFrame(revealThumb);thumbsBtn.setAttribute('aria-pressed',String(on));
+  const l=on?'Hide page thumbnails':'Show page thumbnails';thumbsBtn.setAttribute('aria-label',l);thumbsBtn.title=l}
+thumbsBtn.addEventListener('click',()=>{setThumbs(!pdf.classList.contains('thumbs-open'));updatePdf()});
+thumbsEl.addEventListener('click',e=>{const t=e.target.closest('.thumb');if(!t)return;goTo(+t.dataset.page);if(device!=='desktop')setThumbs(false)});
+$('#scrim').addEventListener('click',()=>setThumbs(false));
+$('#pgroup').addEventListener('click',()=>{if(device==='mobile')setThumbs(!pdf.classList.contains('thumbs-open'))});
+$('#zp-in').addEventListener('click',()=>setZoom(zi+1));$('#zp-out').addEventListener('click',()=>setZoom(zi-1));
+let zt=0;const dtZoom=()=>{const n=Date.now();if(n-zt<500)return;zt=n;setZoom(zi===2?5:2)};
+let lastTap=0;
+vp.addEventListener('dblclick',()=>{if(device!=='desktop')dtZoom()});
+vp.addEventListener('pointerup',e=>{if(device==='desktop'||e.pointerType==='mouse')return;const n=Date.now();if(n-lastTap<320){dtZoom();lastTap=0}else lastTap=n});
+ackBtn.addEventListener('click',()=>{if(viewed.size<N)return;attested=true;
+  $('#ack-done-text').textContent=`Attested on ${new Date().toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})}`;updatePdf();openDone()});
+
+/* ---------- After attesting: Download + Close player ---------- */
+const dlBtn=$('#dl-btn'),dlLabel=$('#dl-label'),closedEl=$('#closed');
+function buildReport(){
+  const when=new Date().toLocaleString(undefined,{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const body=PAGES.map((h,i)=>`<section class="pg"><div class="doc">${h}</div><footer>${DOC} · ${DATE} · ${i+1}</footer></section>`).join('');
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${DOC}</title><style>
+body{font:15px/1.7 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#3B4352;max-width:820px;margin:40px auto;padding:0 20px}
+.rec{border:1px solid #D7DEEA;border-radius:10px;padding:14px 18px;background:#F3F6FB;margin-bottom:28px;color:#0F172A}
+.rec b{display:block;font-size:17px;margin-bottom:2px}
+.pg{padding:8px 0 20px;border-bottom:1px solid #E5E7EB;margin-bottom:20px}
+h1{font-size:24px;color:#24356E}h2{font-size:19px;color:#24356E;margin:22px 0 6px}h3{font-size:16px;color:#2A3F86;margin:18px 0 4px}h4{font-size:14px;font-style:italic;color:#1F2937;margin:14px 0 4px}p{margin:0}
+.cover{border-left:4px solid #0061A4;padding-left:18px}.cover .ttl{font-size:34px;font-weight:700;color:#1B2A5C;margin:6px 0}.cover .kind{color:#0061A4;font-weight:600;margin:0}
+table{border-collapse:collapse;width:100%;margin-top:10px}th,td{border:1px solid #D7DEEA;padding:6px 10px;text-align:left;vertical-align:top}th{background:#EEF1F8;color:#24356E}ul{padding-left:22px}.toc div{display:flex;gap:8px}.toc i{flex:1;border-bottom:1px dotted #aaa}.toc .sub{padding-left:18px}a{color:#0061A4}footer{font-size:12px;color:#6B7280;margin-top:14px}.doc-end{margin-top:18px;color:#6B7280;font-size:13px}
+</style></head><body><div class="rec"><b>Attestation record</b>${DOC}: attested on ${when}</div>${body}</body></html>`}
+async function downloadReport(lab=dlLabel){
+  const html=buildReport(),filename='Global-Whistleblowing-Policy-attested.html';
+  const label=t=>{lab.textContent=t;clearTimeout(label.t);label.t=setTimeout(()=>lab.textContent='Download',2400)};
+  let dl=null;try{dl=await window.claude?.use?.('downloads')}catch(e){}
+  if(dl){
+    try{await dl.save({filename,data:html});label('Downloaded')}
+    catch(e){if(e&&(e.code==='declined'||e.code==='rate_limited'))return;label('Couldn’t download')}
+    return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([html],{type:'text/html'}));a.download=filename;
+  document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500);label('Downloaded')}
+dlBtn.addEventListener('click',()=>downloadReport());
+/* ---------- Completion message (opens after Review and Attest) ---------- */
+const dd=$('#done-dialog');
+let ddT;
+const ddDelay=()=>Math.min(12000,3500+COMPLETION_MESSAGE.length*45);
+function armDone(){clearTimeout(ddT);ddT=setTimeout(closeDone,ddDelay())}
+function openDone(){const m=$('#dd-msg');m.textContent=COMPLETION_MESSAGE;$('#dd-body').classList.toggle('long',COMPLETION_MESSAGE.length>150||COMPLETION_MESSAGE.includes('\n'));
+  $('#dd-body').scrollTop=0;dd.hidden=false;armDone();$('#dd-close').focus({preventScroll:true})}
+function closeDone(){clearTimeout(ddT);dd.hidden=true}
+dd.addEventListener('click',e=>{if(e.target===dd)closeDone()});
+$('#dd-close').addEventListener('click',closeDone);
+$('#dd-card').addEventListener('pointerenter',()=>clearTimeout(ddT));
+$('#dd-card').addEventListener('pointerleave',()=>{if(!dd.hidden)armDone()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!dd.hidden)closeDone()});
+function closePlayer(){
+  closeDone();video.media.pause();audio.media.pause();
+  try{if(parent!==window)parent.postMessage({type:'player:close'},'*')}catch(e){}
+  try{window.close()}catch(e){}
+  setTimeout(()=>{closedEl.hidden=false;$('#reopen-btn').focus()},120)}
+$('#close-btn').addEventListener('click',closePlayer);
+$('#reopen-btn').addEventListener('click',()=>{closedEl.hidden=true});
+
+/* ---------- Device preview (Prototype settings) ---------- */
+const DEVS={desktop:null,tablet:{w:768,h:1024,r:34},mobile:{w:390,h:844,r:48}};
+const devstage=$('#devstage'),deviceEl=$('#device');
+function fitDevice(){const d=DEVS[device],framed=!!d&&innerWidth>=d.w+120&&innerHeight>=360;
+  devstage.dataset.framed=framed?'1':'';
+  if(framed){devstage.style.setProperty('--dw',d.w+'px');devstage.style.setProperty('--dh',d.h+'px');devstage.style.setProperty('--dr',d.r+'px');
+    devstage.style.setProperty('--ds',Math.min(1,(innerHeight-64)/d.h,(innerWidth-48)/d.w).toFixed(3))}
+  else devstage.style.removeProperty('--ds')}
+function setDevice(d){if(layoutDev!==d){PAGES=[COVER,...buildPages(d)];N=PAGES.length;renderPages()}device=d;deviceEl.dataset.device=d;deviceEl.dataset.touch=d==='desktop'?'':'1';
+  $$('.dtab').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.device===d)));
+  pageInput.readOnly=d==='mobile';fitDevice();closedEl.hidden=true;info.classList.remove('open');
+  setThumbs(d==='desktop');setZoom(2);updatePdf()}
+$$('.dtab').forEach(b=>b.addEventListener('click',()=>setDevice(b.dataset.device)));
+window.addEventListener('resize',fitDevice);
+
+/* ---------- Format switch ---------- */
+const META={
+  pdf:[DOC,'This course includes the Howden Group Global Whistleblowing Policy and Reporting Procedure that you are required to review and adhere to as part of your employment responsibilities. It explains the concerns the policy covers, the steps for raising a concern, including the independent and confidential Safecall line available 24/7, and the protection from retaliation for anyone who raises a concern in good faith.'],
+  video:['Spotting and Reporting Phishing Emails Safely','A short walkthrough of the common warning signs in phishing emails and the steps to take when you receive one.'],
+  audio:['Speaking Up: Raising Concerns Without Fear','A short audio briefing on how to raise a conduct concern, who to contact, and how the organization protects people who speak up in good faith.']
+};
+const tabs=$$('[role="tab"]');let active='pdf';
+function show(f){active=f;
+  tabs.forEach(t=>{const on=t.dataset.format===f;t.setAttribute('aria-selected',String(on));t.tabIndex=on?0:-1});
+  ['pdf','video','audio'].forEach(k=>$('#panel-'+k).hidden=k!==f);
+  $('#title').textContent=META[f][0];$('#info-pop').textContent=META[f][1];document.title=META[f][0];
+  $('#pdfnav').hidden=f!=='pdf';thumbsBtn.hidden=f!=='pdf';
+  if(f!=='video')video.media.pause();if(f!=='audio')audio.media.pause();
+  if(f==='audio')requestAnimationFrame(()=>drawWave())}
+tabs.forEach((t,i)=>{t.addEventListener('click',()=>show(t.dataset.format));
+  t.addEventListener('keydown',e=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;e.preventDefault();const n=tabs[(i+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length];n.focus();show(n.dataset.format)})});
+
+/* ---------- Keyboard (media) ---------- */
+document.addEventListener('keydown',e=>{
+  if(active==='pdf'||e.defaultPrevented||e.metaKey||e.ctrlKey||e.altKey)return;
+  const tg=e.target;if(tg.matches('input[type=checkbox],[role=tab]'))return;
+  const c=active==='video'?video:audio,inside=c.panel.contains(tg)||tg===document.body;
+  if(tg.matches('input[type=range],[role=slider]')&&e.key.startsWith('Arrow'))return;
+  switch(e.key){
+    case ' ':if(tg.matches('button')||!inside)return;e.preventDefault();c.toggle();break;
+    case 'k':case 'K':e.preventDefault();c.toggle();break;
+    case 'j':case 'J':c.skip(-10);break;
+    case 'l':case 'L':c.skip(10);break;
+    case 'ArrowLeft':if(!inside)return;e.preventDefault();c.skip(-5);break;
+    case 'ArrowRight':if(!inside)return;e.preventDefault();c.skip(5);break;
+    case 'ArrowUp':if(!inside)return;e.preventDefault();c.setVolume(clamp((c.muted?0:c.vol)+.1,0,1));break;
+    case 'ArrowDown':if(!inside)return;e.preventDefault();c.setVolume(clamp(c.vol-.1,0,1));break;
+    case 'm':case 'M':c.toggleMute();break;
+    case 'f':case 'F':if(active==='video')toggleFs();break;
+    default:if(/^[0-9]$/.test(e.key)&&inside)c.seek(c.duration*(+e.key)/10)
+  }
+});
+
+show('pdf');updatePdf();vp.focus({preventScroll:true});
+setDevice(innerWidth<=720?'mobile':innerWidth<=1100?'tablet':'desktop');
+};
+(document.fonts&&document.fonts.load?Promise.race([Promise.all([document.fonts.load('400 14px Inter'),document.fonts.load('600 14px Inter')]),new Promise(r=>setTimeout(r,1500))]):Promise.resolve()).catch(()=>{}).then(boot);
+</script>
+</body>
+</html>
